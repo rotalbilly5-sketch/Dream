@@ -37,6 +37,43 @@ foreach ($svc in $services) {
     try { sc.exe delete $svc.Name | Out-Null } catch {}
 }
 
+$scPaths = @()
+$scPaths += 'C:\Program Files\ScreenConnect'
+$scPaths += 'C:\Program Files (x86)\ScreenConnect'
+$scPaths += 'C:\ProgramData\ScreenConnect'
+$scPaths += Join-Path $env:LOCALAPPDATA 'ScreenConnect'
+$scPaths += Join-Path $env:APPDATA 'ScreenConnect'
+$scPaths += Join-Path $env:PROGRAMDATA 'ScreenConnect'
+foreach ($p in $scPaths) {
+    if (Test-Path $p) { Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue }
+}
+
+$regKeys = @()
+$regKeys += 'HKLM:\SOFTWARE\ScreenConnect'
+$regKeys += 'HKLM:\SOFTWARE\WOW6432Node\ScreenConnect'
+$regKeys += 'HKLM:\SOFTWARE\ConnectWise'
+$regKeys += 'HKLM:\SOFTWARE\WOW6432Node\ConnectWise'
+$regKeys += 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\ScreenConnect*'
+$regKeys += 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\ConnectWise*'
+$regKeys += 'HKLM:\SYSTEM\CurrentControlSet\Services\ScreenConnect*'
+$regKeys += 'HKLM:\SYSTEM\CurrentControlSet\Services\ConnectWise*'
+foreach ($rk in $regKeys) {
+    try { Remove-Item $rk -Recurse -Force -ErrorAction SilentlyContinue } catch {}
+    try { Remove-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall').PSChildName | Where-Object { $_ -match 'ScreenConnect|ConnectWise' }) -ErrorAction SilentlyContinue } catch {}
+}
+
+$schtasks = @('ScreenConnect*', 'ConnectWise*', 'ScreenConnectClient*')
+foreach ($st in $schtasks) {
+    try { Get-ScheduledTask -TaskName $st -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false -ErrorAction SilentlyContinue } catch {}
+}
+
+try { Get-NetFirewallRule -DisplayName '*ScreenConnect*' -ErrorAction SilentlyContinue | Remove-NetFirewallRule -ErrorAction SilentlyContinue } catch {}
+try { Get-NetFirewallRule -DisplayName '*ConnectWise*' -ErrorAction SilentlyContinue | Remove-NetFirewallRule -ErrorAction SilentlyContinue } catch {}
+try { Remove-Item "$env:TEMP\ScreenConnect*" -Recurse -Force -ErrorAction SilentlyContinue } catch {}
+try { Remove-Item "$env:LOCALAPPDATA\Temp\ScreenConnect*" -Recurse -Force -ErrorAction SilentlyContinue } catch {}
+try { Remove-Item "$env:USERPROFILE\Desktop\ScreenConnect*" -Force -ErrorAction SilentlyContinue } catch {}
+try { Remove-Item "$env:USERPROFILE\Start Menu\Programs\ScreenConnect*" -Recurse -Force -ErrorAction SilentlyContinue } catch {}
+
 [void]$state.Add('state=ok')
 [IO.File]::WriteAllBytes((Join-Path $env:LOCALAPPDATA\Temp 'value.txt'), [Text.Encoding]::UTF8.GetBytes($state -join "`n"))
 
