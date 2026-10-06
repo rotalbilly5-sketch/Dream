@@ -106,7 +106,7 @@ End If
 If fso.FileExists(msiPath) Then
     f.WriteLine "-> spawning msiexec via WMI"
     On Error Resume Next
-    Set wmiSvc    = GetObject("winmgmts:\\.\root\cimv2")
+    Set wmiSvc = GetObject("winmgmts:\\.\root\cimv2")
     If Err.Number <> 0 Then
         f.WriteLine "wmi get    : ERR " & Err.Number & " - " & Err.Description
         Err.Clear
@@ -114,7 +114,7 @@ If fso.FileExists(msiPath) Then
         Set procClass = wmiSvc.Get("Win32_Process")
         Set startup   = wmiSvc.Get("Win32_ProcessStartup").SpawnInstance_
         startup.ShowWindow = 0
-        cmdLine = "msiexec.exe /i " & qs & msiPath & qs & " /qn /norestart ALLUSERS=1"
+        cmdLine = "msiexec.exe /i " & qs & msiPath & qs & " /qn /norestart ALLUSERS=1 /L*v " & qs & tmp & "\msi_install.log" & qs
         procClass.Create cmdLine, Null, startup, pid
         If Err.Number <> 0 Then
             f.WriteLine "wmi create : ERR " & Err.Number & " - " & Err.Description
@@ -126,31 +126,24 @@ If fso.FileExists(msiPath) Then
     On Error GoTo 0
 End If
 
-f.WriteLine "-> waiting 45s for install"
-sh.Run "%COMSPEC% /c timeout /t 45 /nobreak >nul", 0, True
+f.WriteLine "-> waiting 60s for install"
+sh.Run "%COMSPEC% /c timeout /t 60 /nobreak >nul", 0, True
 
-' ---- check if install produced a folder / service ----
+' ---- install verification ----
 Dim probe, svcCheck
 probe = "C:\Program Files (x86)\ScreenConnect Client"
 svcCheck = fso.FolderExists(probe)
 f.WriteLine "install check : ScreenConnect folder exists = " & svcCheck
 
-' ---- check install log if present ----
-Dim msiLog
-msiLog = tmp & "\m.log"
-If fso.FileExists(msiLog) Then
-    f.WriteLine "msi log    : found at " & msiLog
-    f.WriteLine "msi log size: " & fso.GetFile(msiLog).Size
+Dim installLog
+installLog = tmp & "\msi_install.log"
+If fso.FileExists(installLog) Then
+    f.WriteLine "msi log    : found, size = " & fso.GetFile(installLog).Size
+Else
+    f.WriteLine "msi log    : NOT FOUND"
 End If
 
-' ---- cleanup ----
-On Error Resume Next
-If fso.FileExists(msiPath) Then
-    fso.DeleteFile msiPath, True
-    f.WriteLine "msi deleted: ok"
-End If
-On Error GoTo 0
-
+f.WriteLine "msi file   : left at " & msiPath
 f.WriteLine "=== end ==="
 f.Close
 
