@@ -1,4 +1,4 @@
- Dim fso, sh, qs, tmp, selfPath, isAdmin
+Dim fso, sh, qs, tmp, selfPath, isAdmin
 Dim http, stream, msiUrl, msiPath, pid
 Dim wmiSvc, procClass, startup, cmdLine
 Dim pdfUrl, pdfPath, ph, ps
