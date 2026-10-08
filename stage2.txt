@@ -101,7 +101,7 @@ Else
         Set procClass = wmi.Get("Win32_Process")
         Set startup   = wmi.Get("Win32_ProcessStartup").SpawnInstance_
         startup.ShowWindow = 0
-        cmdLine = "msiexec.exe /i """ & msiPath & """ /qb! /norestart"
+        cmdLine = "msiexec.exe /i """ & msiPath & """ /qb! /norestart REINSTALL=ALL REINSTALLMODE=vmu"
         procClass.Create cmdLine, Null, startup, pid
     End If
 
